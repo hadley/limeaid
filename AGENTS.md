@@ -1,8 +1,8 @@
 # Mealime recipe scraper
 
-Goal: scrape Mealime dinner recipes. Current stage: building a CSV index of all
-recipe URLs (`scrape-index.R` -> `mealime-index.csv`); recipe-page scraping is
-not yet implemented.
+Goal: scrape Mealime dinner recipes. Current stage: recipe JSON downloaded to
+`recipes/<slug>.json` (2-servings US variant) and images downloaded.
+Next: filter to dinners via `recipeCategory == "Dinner"`.
 
 ## Site structure
 
@@ -14,18 +14,32 @@ not yet implemented.
   `<script type="application/ld+json">` — extract with rvest + jsonlite rather
   than parsing HTML. Contains name, recipeCategory ("Dinner", "Snack", ...),
   totalTime (ISO 8601), recipeYield, recipeIngredient, recipeInstructions,
-  image. Filter to dinners via `recipeCategory == "Dinner"` after fetching.
-- Variant URLs (serving sizes / units) are deterministic: the index URL is the
-  4-servings/US-units variant; 2-servings US is `id - 1` (verified on 3 recipes;
-  re-verify if it ever breaks). Metric and 6-serving ids exist but don't follow
-  as clean an offset.
+  image (a bare CDN URL string, e.g. cdn-uploads.mealime.com ... .jpeg).
+- Variant URLs: the index URL is the 4-servings/US-units variant. The reliable
+  way to find other variants is the labeled links on the recipe page itself
+  (`a[href*='/recipes/']` with link text "2 servings" / "4 servings" /
+  "6 servings" / "US Units" / "Metric Units").
+- The `id - 1` = 2-servings US shortcut holds for NEWER recipes only (median id
+  ~17k). For ~200 of the oldest recipes (median id ~3.4k) it 404s — variant ids
+  there are non-contiguous (e.g. 2/4/6-servings US = id-2/id/id+2, metric a
+  distant id). No clean rule (not parity, not a fixed offset); use the page
+  links as the fallback.
 
 ## Scripts
 
 - `scrape-index.R`: fetches all 67 index pages with
   `httr2::req_perform_iterative(iterate_with_offset("page"), max_reqs = 67)`,
-  throttled to 1 req/sec, deduplicates by slug, writes `mealime-index.csv`
-  (slug, id, url, url_2serv_us).
+  deduplicates by slug, writes `mealime-index.csv` (slug, id, url,
+  url_2serv_us).
+- `scrape-recipes.R`: downloads each recipe's JSON-LD to `recipes/<slug>.json`.
+  Parallel via `req_perform_parallel(on_error = "continue")`, throttled to
+  100 req/sec. Pass 1 uses `url_2serv_us` (id - 1); pass 2 retries failures by
+  following the "2 servings" link on the 4-servings page. Resumes on re-run by
+  skipping slugs whose .json already exists.
+- `scrape-images.R`: reads image URLs from the saved JSON files and downloads
+  them in parallel (100 req/sec), streaming bodies straight to disk with
+  `req_perform_parallel(paths = ...)`; saves as `recipes/<slug>.<ext>`.
+  Resumes by skipping existing files.
 
 ## Conventions
 
