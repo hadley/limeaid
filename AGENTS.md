@@ -52,8 +52,11 @@ working 2-servings US variant on Mealime itself (its "2 servings" link 404s).
   JSON to `recipes-full/<slug>.json`. Parallel via
   `req_perform_parallel(on_error = "continue")`, throttled to 100 req/sec.
   Pass 1 uses `url_2serv_us` (id - 1); pass 2 retries failures by following
-  the "2 servings" link on the 4-servings page. Resumes on re-run by skipping
-  slugs whose .json already exists.
+  the "2 servings" link on the 4-servings page; pass 3 detects saved JSONs
+  whose `serving_count != 2` (pass 2 landed 67 old recipes on 4-servings
+  metric pages) and re-scrapes them via the "US Units" link followed by the
+  "2 servings" link. Resumes on re-run by skipping slugs whose .json
+  already exists.
 - `scrape-recipes/import-recipes.R`: reads `recipes-full/*.json`, filters to
   `schemaMetadata$category == "Dinner"` (1224 of 1607), writes
   `db/seed/recipes.jsonl` matching the `recipes` table in db/schema.sql.
