@@ -57,12 +57,14 @@ working 2-servings US variant on Mealime itself (its "2 servings" link 404s).
 - `scrape-recipes/import-recipes.R`: reads `recipes-full/*.json`, filters to
   `schemaMetadata$category == "Dinner"` (1224 of 1607), writes
   `db/seed/recipes.jsonl` matching the `recipes` table in db/schema.sql.
-  Emits structured JSONB shapes: `ingredients` = [{name, quantity|null}]
-  (null quantity = pantry staple) and `instructions` = [{text, amounts|null}]
-  (amounts = per-step quantity strings). Images referenced as
-  `recipes-full/<slug>.<ext>`.
-- `scrape-recipes/normalize-ingredients.R`: LLM pass (ellmer) parsing raw
-  ingredient strings into {quantity, unit, name} for the `ingredients` table.
+  Emits structured JSONB shapes: `ingredients` = [{name, quantity, unit,
+  display}] (null quantity/unit = pantry staple) and `instructions` = [{text,
+  amounts|null}] (amounts = per-step quantity strings). Images referenced as
+  `recipes-full/<slug>.<ext>`. Quantity parsing is deterministic (no LLM —
+  line_items already splits name/quantity, and all quantity strings match
+  `<number> [(pkg size)] [unit words]`); package sizes stay in the unit
+  (e.g. `can (15 oz)`) so grocery merging never mixes sizes, and names are
+  canonicalized lowercase + comma-inversion only (no singularization).
 - `scrape-recipes/fix-metric-recipes.R`: superseded one-off fix for the old
   JSON-LD corpus; kept for history only.
 - Deleted: `scrape-recipes.R` / `scrape-images.R` (JSON-LD era; recoverable

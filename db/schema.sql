@@ -15,7 +15,7 @@ create table recipes (
   yield         text,                          -- e.g. '2 servings'
   image_path    text,                          -- local file in app storage
   image_url     text,                          -- original CDN url (fallback)
-  ingredients   jsonb not null,                -- array of {name, quantity?}; quantity absent = pantry staple
+  ingredients   jsonb not null,                -- array of {name, quantity, unit, display}; quantity/unit null = pantry staple
   instructions  jsonb not null,                -- array of {text, amounts?}, ordered; amounts = per-step qty strings
   created_at    timestamptz not null default now()
 );
@@ -45,21 +45,6 @@ create table meal_plan_entries (
   unique (meal_plan_id, recipe_id)
 );
 
--- Ingredient dictionary: maps each raw ingredient string ("2 cloves garlic")
--- to a parsed quantity/unit and a canonical normalized name. Populated by a
--- one-time LLM batch pass over the corpus; new recipes are normalized at
--- import time. Grocery-list merging groups by `name`; pantry-staple matching
--- is an exact match on `name`.
-create table ingredients (
-  id        bigint generated always as identity primary key,
-  raw_text  text not null unique,              -- exact string as it appears in a recipe
-  name      text,                              -- canonical lowercase singular, e.g. 'garlic'
-  quantity  numeric,                           -- null for unstated amounts ("salt")
-  unit      text,                              -- 'clove', 'cup', 'oz', ...; null if none
-  reviewed  boolean not null default false,    -- set once a human has verified the parse
-  created_at timestamptz not null default now()
-);
-
 -- Static pantry staples (spices, flour, sugar, oils, ...). Grocery list
 -- generation skips items whose normalized name matches a staple.
 create table pantry_staples (
@@ -72,9 +57,11 @@ create table pantry_staples (
 create table grocery_items (
   id           bigint generated always as identity primary key,
   meal_plan_id bigint not null references meal_plans (id) on delete cascade,
-  name          text not null,                 -- display text, e.g. '2 limes'
-  ingredient_id bigint references ingredients (id), -- null for manually added free-text items
-  recipe_id     bigint references recipes (id),     -- null for manually added items
+  name         text not null,                  -- canonical name for merging; free text for manual items
+  display      text not null,                  -- display text, e.g. '2 limes'
+  quantity     numeric,                        -- parsed amount; null for unstated/manual
+  unit         text,                           -- 'clove', 'cup', 'oz', ...; null if none
+  recipe_id    bigint references recipes (id), -- null for manually added items
   checked      boolean not null default false,
   position     smallint not null default 0,
   created_at   timestamptz not null default now()

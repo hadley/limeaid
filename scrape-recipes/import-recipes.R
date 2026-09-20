@@ -15,6 +15,72 @@ library(jsonlite)
 
 dir.create("db/seed", recursive = TRUE, showWarnings = FALSE)
 
+# --- deterministic quantity parsing -----------------------------------------
+# line_items already splits name/quantity, and every quantity string in the
+# corpus matches `<number> [(package size)] [unit words]`, so parsing is a
+# regex, not an LLM. stopifnot guards against new shapes appearing.
+
+unicode_fractions <- c(
+  "¼" = 0.25, "½" = 0.5, "¾" = 0.75,
+  "⅓" = 1 / 3, "⅔" = 2 / 3,
+  "⅛" = 0.125, "⅜" = 0.375, "⅝" = 0.625, "⅞" = 0.875
+)
+
+parse_number <- function(x) {
+  # "1 ½" -> 1.5, "½" -> 0.5, "0.454" -> 0.454
+  total <- 0
+  for (part in strsplit(x, " ", fixed = TRUE)[[1]]) {
+    if (part %in% names(unicode_fractions)) {
+      total <- total + unicode_fractions[[part]]
+    } else {
+      total <- total + as.numeric(part)
+    }
+  }
+  total
+}
+
+# Size descriptors are stripped from unit words; "each" when nothing remains
+# ("2 medium heads" -> 2 head; "10 medium" -> 10 each)
+size_words <- c("small", "medium", "large")
+
+unit_aliases <- c(
+  "cans" = "can", "jars" = "jar", "pkgs" = "pkg", "packages" = "package",
+  "blocks" = "block", "logs" = "log", "pieces" = "piece",
+  "slices" = "slice", "cloves" = "clove", "ears" = "ear", "heads" = "head",
+  "bunches" = "bunch", "crowns" = "crown", "sticks" = "stick",
+  "caps" = "cap", "cups" = "cup", "pints" = "pint"
+)
+
+parse_quantity <- function(q) {
+  # Returns list(quantity = numeric|NA, unit = character|NA). Package sizes
+  # stay in the unit ("can (15 oz)") so grocery merging never mixes sizes.
+  if (is.na(q) || q == "") return(list(quantity = NA_real_, unit = NA_character_))
+
+  m <- regmatches(q, regexec("^([0-9.¼½¾⅓⅔⅛⅜⅝⅞ ]+?)\\s*(?:\\(([^)]*)\\)\\s*)?([a-z ]*)$", q))[[1]]
+  stopifnot("unparseable quantity string" = length(m) == 4)
+
+  quantity <- parse_number(trimws(m[2]))
+  size <- m[3] # "" when absent
+  words <- trimws(m[4])
+
+  words <- trimws(paste(setdiff(strsplit(words, " ", fixed = TRUE)[[1]], size_words), collapse = " "))
+  if (words == "") words <- "each"
+  if (words %in% names(unit_aliases)) words <- unit_aliases[[words]]
+  if (size != "") words <- paste0(words, " (", size, ")")
+
+  list(quantity = quantity, unit = words)
+}
+
+canonical_name <- function(x) {
+  x <- tolower(x)
+  # "butter, unsalted" -> "unsalted butter" (no singularization)
+  if (grepl(", ", x, fixed = TRUE)) {
+    parts <- strsplit(x, ", ", fixed = TRUE)[[1]]
+    x <- paste(c(parts[-1], parts[1]), collapse = " ")
+  }
+  x
+}
+
 files <- list.files("recipes-full", pattern = "\\.json$", full.names = TRUE)
 
 skipped <- 0L
@@ -36,12 +102,22 @@ for (f in files) {
   if (length(img) == 0) img <- NA_character_
 
   # Structured ingredients from line_items; quantity is "" for pantry
-  # staples (their amounts live in the per-step `amounts` below)
-  to_null <- function(x) if (is.null(x) || length(x) == 0 || x == "") NA_character_ else x
+  # staples (their amounts live in the per-step `amounts` below). Each item
+  # is {name, quantity, unit, display}: name canonicalized for grocery-list
+  # merging, quantity/unit parsed, display the original string for the UI.
   ingredients <- lapply(seq_len(nrow(pr$line_items)), function(i) {
+    qty_str <- pr$line_items$quantity[i]
+    parsed <- parse_quantity(qty_str)
+    display <- if (is.na(qty_str) || qty_str == "") {
+      pr$line_items$ingredient_name[i]
+    } else {
+      paste(qty_str, pr$line_items$ingredient_name[i])
+    }
     list(
-      name = pr$line_items$ingredient_name[i],
-      quantity = to_null(pr$line_items$quantity[i])
+      name = canonical_name(pr$line_items$ingredient_name[i]),
+      quantity = parsed$quantity,
+      unit = parsed$unit,
+      display = display
     )
   })
 
