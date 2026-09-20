@@ -21,6 +21,14 @@ filtering, pantry tracking, serving scaling, multi-user.
   1224 recipes (`npm run seed` in `web/`, DATABASE_URL in `web/.env.local`),
   browse (`/recipes`) with search + protein filter, detail
   (`/recipes/[slug]`), shared-password middleware (`APP_PASSWORD`).
+- **Plan stage: done.** `/plan/[week]` (Monday `YYYY-MM-DD`; `/plan` and `/`
+  redirect to current week) with scored softmax sampling (τ=0.3, stratified
+  by protein bucket), 12-card batches persisted per-week in `settings`
+  (`plan-batch:`/`plan-shown:` keys), tap-to-pick toggling into
+  `meal_plan_entries`, and the novelty slider (`settings.novelty`, default
+  0.3). Navbar shows Plan/Shop/Cook pills; Shop/Cook are display-only until
+  their stages are built, and `/` always redirects to `/plan/<week>` until
+  then (TODO in `web/src/app/page.tsx`).
 
 ## Components
 

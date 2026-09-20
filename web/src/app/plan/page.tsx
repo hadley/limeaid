@@ -3,8 +3,6 @@ import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
 import { mondayOf } from "@/lib/week";
 
-// TODO: once /shop and /cook exist, redirect adaptively to the current stage
-// (weekStage in lib/plan.ts already computes it).
-export default function Home() {
+export default function PlanIndex() {
   redirect(`/plan/${mondayOf()}`);
 }
