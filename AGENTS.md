@@ -2,24 +2,36 @@
 
 Goal: build a Mealime replacement (Mealime is shutting down) — see PLAN.md.
 Dinner-only planning, grocery list feeding HEB curbside via search-URL
-handoff, three-level ratings (disliked hidden), React/Next.js + Postgres on
-Vercel, single user. The scraped corpus below is the seed catalog.
+handoff, React/Next.js + Postgres on Vercel, single user. The scraped corpus 
+below is the seed catalog.
 
-Scraping stage: recipe JSON downloaded to `recipes/<slug>.json` (2-servings
-US variant) and images downloaded.
-Next: filter to dinners via `recipeCategory == "Dinner"` for the DB import.
+Scraping stage: complete. Full recipe JSON (embedded Next.js `__NEXT_DATA__`,
+2-servings US variant) saved to `recipes-full/<slug>.json` alongside images
+`recipes-full/<slug>.<jpeg|jpg>`; both gitignored. 1607/1608 recipes — the
+one failure (`stuffed-acorn-squash-apple-bacon-pine-nuts`, id 4534) has no
+working 2-servings US variant on Mealime itself (its "2 servings" link 404s).
 
 ## Site structure
 
 - Index: `https://www.mealime.com/recipes?page=N`, 67 pages, 24 recipes/page.
   There is NO meal-type filter on the index (query params like `?category=dinner`
   are ignored — they return the same results).
-- Recipe pages: `https://www.mealime.com/recipes/<slug>/<id>`. Each page embeds
-  a schema.org Recipe as JSON-LD in
-  `<script type="application/ld+json">` — extract with rvest + jsonlite rather
-  than parsing HTML. Contains name, recipeCategory ("Dinner", "Snack", ...),
-  totalTime (ISO 8601), recipeYield, recipeIngredient, recipeInstructions,
-  image (a bare CDN URL string, e.g. cdn-uploads.mealime.com ... .jpeg).
+- Recipe pages: `https://www.mealime.com/recipes/<slug>/<id>`. The rich data is
+  the embedded Next.js blob in `<script id="__NEXT_DATA__" type="application/json">`
+  — extract with rvest + jsonlite. Data lives at
+  `props.pageProps.publishedRecipe` (id, recipe_id, slug, serving_count,
+  cooking_minutes, name, presentation_image_url, cookwares, instructions,
+  line_items, nutrition) plus `props.pageProps.schemaMetadata` (category,
+  keywords, cuisine, reviewCount). Sanity-check `parsed$page ==
+  "/recipes/[slug]/[variantId]"` — Next.js serves a 200 with a 404 page body
+  for dead variant ids.
+- Key fields: `line_items` = data frame of {quantity, ingredient_name}
+  (quantity is "" for pantry staples); `instructions` = data frame of
+  {primary_message, secondary_message} where secondary_message holds the
+  per-step quantities ("1 tsp red wine vinegar") as newline-separated strings;
+  `nutrition` = ~80-field nutrient profile (not yet imported into the schema).
+- The page ALSO embeds a schema.org Recipe as JSON-LD, but it is a lossy
+  summary: pantry staples have no quantities anywhere in it. Do not use it.
 - Variant URLs: the index URL is the 4-servings/US-units variant. The reliable
   way to find other variants is the labeled links on the recipe page itself
   (`a[href*='/recipes/']` with link text "2 servings" / "4 servings" /
@@ -36,21 +48,29 @@ Next: filter to dinners via `recipeCategory == "Dinner"` for the DB import.
   `httr2::req_perform_iterative(iterate_with_offset("page"), max_reqs = 67)`,
   deduplicates by slug, writes `mealime-index.csv` (slug, id, url,
   url_2serv_us).
-- `scrape-recipes/scrape-recipes.R`: downloads each recipe's JSON-LD to `recipes/<slug>.json`.
-  Parallel via `req_perform_parallel(on_error = "continue")`, throttled to
-  100 req/sec. Pass 1 uses `url_2serv_us` (id - 1); pass 2 retries failures by
-  following the "2 servings" link on the 4-servings page. Resumes on re-run by
-  skipping slugs whose .json already exists.
-- `scrape-recipes/scrape-images.R`: reads image URLs from the saved JSON files and downloads
-  them in parallel (100 req/sec), streaming bodies straight to disk with
-  `req_perform_parallel(paths = ...)`; saves as `recipes/<slug>.<ext>`.
-  Resumes by skipping existing files.
-- `scrape-recipes/fix-metric-recipes.R`: one-off fix for a scraping bug — for
-  the oldest recipes the pass-1 `id - 1` shortcut fetched the metric
-  2-servings variant (which lives at id - 1 for those) instead of 404ing.
-  Re-fetches affected recipes via the labeled "2 servings" link on the
-  4-servings page, which is always the US variant.
+- `scrape-recipes/scrape-full-json.R`: downloads each recipe's `__NEXT_DATA__`
+  JSON to `recipes-full/<slug>.json`. Parallel via
+  `req_perform_parallel(on_error = "continue")`, throttled to 100 req/sec.
+  Pass 1 uses `url_2serv_us` (id - 1); pass 2 retries failures by following
+  the "2 servings" link on the 4-servings page. Resumes on re-run by skipping
+  slugs whose .json already exists.
+- `scrape-recipes/import-recipes.R`: reads `recipes-full/*.json`, filters to
+  `schemaMetadata$category == "Dinner"` (1224 of 1607), writes
+  `db/seed/recipes.jsonl` matching the `recipes` table in db/schema.sql.
+  Emits structured JSONB shapes: `ingredients` = [{name, quantity|null}]
+  (null quantity = pantry staple) and `instructions` = [{text, amounts|null}]
+  (amounts = per-step quantity strings). Images referenced as
+  `recipes-full/<slug>.<ext>`.
+- `scrape-recipes/normalize-ingredients.R`: LLM pass (ellmer) parsing raw
+  ingredient strings into {quantity, unit, name} for the `ingredients` table.
+- `scrape-recipes/fix-metric-recipes.R`: superseded one-off fix for the old
+  JSON-LD corpus; kept for history only.
+- Deleted: `scrape-recipes.R` / `scrape-images.R` (JSON-LD era; recoverable
+  from git history if needed).
 
 ## Conventions
 
 - Use `pak::pak()` to install packages; base R pipe `|>`.
+- jsonlite gotchas when emitting the JSONL: NULL list elements serialize as
+  `{}` — use `NA` with `na = "null"` instead; wrap single-element vectors in
+  `I()` so `auto_unbox = TRUE` doesn't collapse them to bare strings.
