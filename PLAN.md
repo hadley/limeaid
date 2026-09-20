@@ -57,6 +57,34 @@ item.
 sidebar on heb.com and auto-searches each item — closest to the original
 experience, but desktop-only and an extra install step.
 
+## Recipe recommendations
+
+Goal: when planning a week, present a small stochastic selection of recipes
+to pick from, mixing favourites and new recipes.
+
+- **Hard filters**: hide recipes cooked in the last 14 days and disliked
+  recipes. 
+- **Scoring**: per recipe, `rating_pts` = loved 2 / liked 1 / unrated 0.5;
+  `recency_pts` = min(days since cooked, 365) / 365, never cooked = 1;
+  `novelty_pts` = 1 if never cooked, else 0.25 × recency_pts. Then
+  `score = (1-s) × (rating_pts × recency_pts) + s × novelty_pts`, where the
+  persisted **novelty slider** `s ∈ [0,1]`: `s=0` favours old favourites,
+  `s=1` favours never-cooked recipes. Scales are intentionally unequal
+  (favourite term max 2 vs novelty max 1) so it takes the slider well past
+  midpoint before new recipes outdraw a loved favourite.
+- **Stochastic sampling**: sample with probability proportional to
+  `exp(score / τ)` (softmax over scores) rather than taking top-N, so
+  favourites recur often but not always. Fixed temperature τ ≈ 0.3 to
+  start, tuned by feel.
+- **Protein spread**: stratified weighted sampling across primary-protein
+  buckets (beef / chicken / pork / lamb / seafood / vegetarian) so no page
+  is dominated by one protein, without rigid quotas.
+- **Paging**: show ~9–12 recipes per page (3×3/3×4 card grid). Paging or
+  re-roll draws a fresh sample without replacement against recipes already
+  shown this session.
+- **Protein tagging** is a one-off classification pass over the scraped
+  ingredient lists (rules-based or LLM), stored as a column on `recipes`.
+
 ## Architecture
 
 - **Frontend**: React (Next.js), mobile-first — primary use is planning on
@@ -73,9 +101,13 @@ experience, but desktop-only and an extra install step.
 
 - `recipes`: id, slug, name, source (`mealime` | `imported` | `manual`),
   source_url, total_time_minutes, image (local path or URL), yield,
-  ingredients (structured: quantity, unit, name), instructions, category.
+  ingredients (structured: quantity, unit, name), instructions, category,
+  primary_protein (beef | chicken | pork | lamb | seafood | vegetarian).
 - `ratings`: recipe_id, rating (`disliked` | `liked` | `loved`), updated_at.
 - `meal_plans` / `meal_plan_entries`: week start date, recipe_id, position.
+- `cook_history` (or derived from meal plans): recipe_id, cooked_at — drives
+  the 14-day exclusion and recency signal in recommendations.
+- `settings`: persisted novelty slider value (single-user key-value is fine).
 - `pantry_staples`: name (matched against grocery list items).
 - `grocery_items` (derived per plan, with manual add/remove and check-off).
 
@@ -97,8 +129,8 @@ allow manual edits.
    handling.
 2. **Browse & rate** — recipe grid (photo, name, total time), thumbs
    rating, disliked hidden.
-3. **Weekly plan** — pick 3–5 dinners for a week, see favourites + new
-   recipes.
+3. **Weekly plan** — pick 3–5 dinners for a week via the recommendation
+   flow above (novelty slider, stratified stochastic sampling, paging).
 4. **Grocery list** — generate, merge, subtract staples, manual edits,
    check-off; HEB search handoff links.
 5. **Custom recipes** — URL import (JSON-LD → LLM fallback) + manual form.
