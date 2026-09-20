@@ -26,9 +26,15 @@ filtering, pantry tracking, serving scaling, multi-user.
   by protein bucket), 12-card batches persisted per-week in `settings`
   (`plan-batch:`/`plan-shown:` keys), tap-to-pick toggling into
   `meal_plan_entries`, and the novelty slider (`settings.novelty`, default
-  0.3). Navbar shows Plan/Shop/Cook pills; Shop/Cook are display-only until
-  their stages are built, and `/` always redirects to `/plan/<week>` until
-  then (TODO in `web/src/app/page.tsx`).
+  0.3). Navbar shows Plan/Shop/Cook pills; Cook is display-only until its
+  stage is built.
+- **Shop stage: done.** `/shop/[week]` lazily generates `grocery_items`
+  from the week's picks (merge by (name, unit), null-quantity → pantry
+  staples section, unicode-fraction display), checkbox persistence, HEB
+  search-URL handoff on the item name, and a Regenerate button that rebuilds
+  from current picks (resets checkmarks). `/` redirects adaptively to plan
+  or shop (cook → shop until `/cook` exists; TODO in
+  `web/src/app/page.tsx`).
 
 ## Components
 

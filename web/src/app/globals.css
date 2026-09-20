@@ -243,3 +243,32 @@ body {
   border-color: #222;
   outline: 2px solid #222;
 }
+
+/* grocery list */
+.grocery {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+
+.grocery li {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.grocery label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+}
+
+.grocery a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.grocery li.checked a {
+  text-decoration: line-through;
+  color: var(--muted);
+}

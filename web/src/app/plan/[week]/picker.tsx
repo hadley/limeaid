@@ -121,10 +121,6 @@ export function Picker({
           );
         })}
       </div>
-      <p className="muted">
-        Tap cards to pick dinners. Paging forward draws a fresh dozen you
-        haven’t seen this week.
-      </p>
     </>
   );
 }

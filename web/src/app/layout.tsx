@@ -20,7 +20,7 @@ export default async function RootLayout({
     {
       label: "Shop",
       count: `${s.groceriesChecked}/${s.groceriesTotal}`,
-      href: null,
+      href: `/shop/${week}`,
       stage: "shop",
     },
     {
