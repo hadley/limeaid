@@ -117,37 +117,53 @@ async function recipesByIds(ids: number[]): Promise<RecipeSummary[]> {
   return rows;
 }
 
-// Draw a fresh batch of BATCH recipes without replacement against everything
-// already shown this week (persisted in settings). Resets when the pool runs
-// low. Stores the batch so reloads see the same cards.
-export async function drawBatch(weekStart: string): Promise<RecipeSummary[]> {
-  const novelty = await getNovelty();
-  const shownKey = `plan-shown:${weekStart}`;
-  let shown = await getSetting<number[]>(shownKey, []);
-
-  const now = Date.now();
-  const all = candidates();
-  let scored = (await all)
-    .filter((c) => !shown.includes(c.id))
-    .map((c) => ({ ...c, w: Math.exp(score(c, novelty, now) / TAU) }));
-
-  // Pool exhausted (or nearly): reset the shown history and start over.
-  if (scored.length < BATCH) {
-    shown = [];
-    scored = (await candidates())
-      .map((c) => ({ ...c, w: Math.exp(score(c, novelty, now) / TAU) }));
-  }
-
-  const batch = stratifiedSample(scored, BATCH);
-  const ids = batch.map((b) => b.id);
-  await setSetting(shownKey, [...shown, ...ids]);
-  await setSetting(`plan-batch:${weekStart}`, ids);
-  return recipesByIds(ids);
+// Pages of BATCH recipes, persisted per week in settings as
+// `plan-pages:<week>` (array of id arrays). Paging forward past the last
+// page draws a fresh batch without replacement against everything already
+// shown this week; the history resets when the pool runs low.
+async function getPages(weekStart: string): Promise<number[][]> {
+  return getSetting<number[][]>(`plan-pages:${weekStart}`, []);
 }
 
-export async function currentBatch(weekStart: string): Promise<RecipeSummary[]> {
-  const ids = await getSetting<number[]>(`plan-batch:${weekStart}`, []);
-  return ids.length ? recipesByIds(ids) : drawBatch(weekStart);
+export async function showPage(
+  weekStart: string,
+  idx: number,
+): Promise<{ batch: RecipeSummary[]; idx: number; total: number }> {
+  let pages = await getPages(weekStart);
+
+  if (idx < 0) idx = 0;
+  if (idx >= pages.length) {
+    // Draw a fresh page.
+    const novelty = await getNovelty();
+    const now = Date.now();
+    let shown = pages.flat();
+    let available = (await candidates()).filter((c) => !shown.includes(c.id));
+
+    // Pool exhausted (or nearly): reset the page history and start over.
+    if (available.length < BATCH) {
+      pages = [];
+      available = await candidates();
+    }
+
+    const scored = available.map((c) => ({
+      ...c,
+      w: Math.exp(score(c, novelty, now) / TAU),
+    }));
+    const batch = stratifiedSample(scored, BATCH);
+    pages = [...pages, batch.map((b) => b.id)];
+    await setSetting(`plan-pages:${weekStart}`, pages);
+    idx = pages.length - 1;
+  }
+
+  return { batch: await recipesByIds(pages[idx]), idx, total: pages.length };
+}
+
+// Latest page, drawing the first one if the week has none yet.
+export async function latestPage(
+  weekStart: string,
+): Promise<{ batch: RecipeSummary[]; idx: number; total: number }> {
+  const pages = await getPages(weekStart);
+  return showPage(weekStart, Math.max(0, pages.length - 1));
 }
 
 export async function ensurePlan(weekStart: string): Promise<number> {

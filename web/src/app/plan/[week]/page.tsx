@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { currentBatch, ensurePlan, getNovelty, getPicks } from "@/lib/plan";
+import { ensurePlan, getNovelty, getPicks, latestPage } from "@/lib/plan";
 import { isMonday, mondayOf, shiftWeek } from "@/lib/week";
 import { Picker } from "./picker";
 
@@ -13,8 +13,8 @@ export default async function PlanWeekPage({
   if (!isMonday(week)) notFound();
 
   await ensurePlan(week);
-  const [batch, picks, novelty] = await Promise.all([
-    currentBatch(week),
+  const [page, picks, novelty] = await Promise.all([
+    latestPage(week),
     getPicks(week),
     getNovelty(),
   ]);
@@ -39,7 +39,7 @@ export default async function PlanWeekPage({
       )}
       <Picker
         week={week}
-        initialBatch={JSON.parse(JSON.stringify(batch))}
+        initialPage={JSON.parse(JSON.stringify(page))}
         initialPicks={JSON.parse(JSON.stringify(picks))}
         initialNovelty={novelty}
       />

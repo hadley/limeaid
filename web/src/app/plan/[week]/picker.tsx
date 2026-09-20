@@ -3,20 +3,22 @@
 import { useState, useTransition } from "react";
 import { imageSrc } from "@/lib/images";
 import type { RecipeSummary } from "@/lib/db";
-import { reroll, setNovelty, togglePick } from "./actions";
+import { gotoPage, setNovelty, togglePick } from "./actions";
+
+type Page = { batch: RecipeSummary[]; idx: number; total: number };
 
 export function Picker({
   week,
-  initialBatch,
+  initialPage,
   initialPicks,
   initialNovelty,
 }: {
   week: string;
-  initialBatch: RecipeSummary[];
+  initialPage: Page;
   initialPicks: RecipeSummary[];
   initialNovelty: number;
 }) {
-  const [batch, setBatch] = useState(initialBatch);
+  const [page, setPage] = useState(initialPage);
   const [picks, setPicks] = useState(initialPicks);
   const [novelty, setNoveltyState] = useState(initialNovelty);
   const [pending, startTransition] = useTransition();
@@ -28,9 +30,9 @@ export function Picker({
       setPicks(await togglePick(week, Number(id)));
     });
 
-  const roll = () =>
+  const goto = (idx: number) =>
     startTransition(async () => {
-      setBatch(await reroll(week));
+      setPage(await gotoPage(week, idx));
     });
 
   const slide = (value: number) => {
@@ -45,9 +47,20 @@ export function Picker({
           <strong>{picks.length}</strong> dinner{picks.length === 1 ? "" : "s"}{" "}
           picked
         </p>
-        <button onClick={roll} disabled={pending}>
-          {pending ? "Drawing…" : "Re-roll"}
-        </button>
+        <span className="pagination">
+          <button
+            onClick={() => goto(page.idx - 1)}
+            disabled={pending || page.idx === 0}
+          >
+            ← Prev
+          </button>
+          <span className="muted">
+            Page {page.idx + 1} of {page.total}
+          </span>
+          <button onClick={() => goto(page.idx + 1)} disabled={pending}>
+            {page.idx + 1 < page.total ? "Next →" : "More →"}
+          </button>
+        </span>
         <label className="muted">
           Novelty
           <input
@@ -78,7 +91,7 @@ export function Picker({
       )}
 
       <div className="grid">
-        {batch.map((r) => {
+        {page.batch.map((r) => {
           const selected = pickIds.has(String(r.id));
           const src = imageSrc(r);
           return (
@@ -109,8 +122,8 @@ export function Picker({
         })}
       </div>
       <p className="muted">
-        Tap cards to pick dinners. Re-roll draws a fresh dozen you haven’t
-        seen this week.
+        Tap cards to pick dinners. Paging forward draws a fresh dozen you
+        haven’t seen this week.
       </p>
     </>
   );

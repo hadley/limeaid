@@ -1,12 +1,6 @@
 "use server";
 
-import {
-  currentBatch,
-  drawBatch,
-  ensurePlan,
-  getPicks,
-  setSetting,
-} from "@/lib/plan";
+import { ensurePlan, getPicks, setSetting, showPage } from "@/lib/plan";
 import { pool, type RecipeSummary } from "@/lib/db";
 
 export async function togglePick(
@@ -28,12 +22,11 @@ export async function togglePick(
   return getPicks(weekStart);
 }
 
-export async function reroll(weekStart: string): Promise<RecipeSummary[]> {
-  return drawBatch(weekStart);
-}
-
-export async function getBatch(weekStart: string): Promise<RecipeSummary[]> {
-  return currentBatch(weekStart);
+export async function gotoPage(
+  weekStart: string,
+  idx: number,
+): Promise<{ batch: RecipeSummary[]; idx: number; total: number }> {
+  return showPage(weekStart, idx);
 }
 
 export async function setNovelty(value: number): Promise<void> {
