@@ -1,3 +1,4 @@
 *.rds
 .Rproj.user
 recipes/
+db/seed/*-batch.json
