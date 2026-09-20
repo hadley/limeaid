@@ -59,9 +59,26 @@ result <- batch_chat_structured(
 )
 
 out <- data.frame(name = names, department = result$department)
+
+# Hand-classified pantry staples: items Mealime lists with quantities but
+# everyone keeps on hand. They get their own pseudo-department, which the
+# shopping UI renders as the "check you have these" section.
+staples <- c(
+  "garlic",
+  "chicken or vegetable broth",
+  "egg",
+  "eggs",
+  "basmati rice",
+  "tomato paste",
+  "frozen peas",
+  "frozen corn"
+)
+stopifnot(all(staples %in% out$name))
+out$department[out$name %in% staples] <- "Pantry Staples"
+
 stopifnot(
   nrow(out) == length(names),
-  out$department %in% departments,
+  out$department %in% c(departments, "Pantry Staples"),
   !is.na(out$department)
 )
 

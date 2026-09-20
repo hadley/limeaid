@@ -8,5 +8,8 @@ export const DEPARTMENT_ORDER = [
   "Bakery",
   "Frozen",
   "Pantry & Dry Goods",
+  // Staples normally render in their own "check you have these" section;
+  // listed here so one leaking into the to-buy list sorts last.
+  "Pantry Staples",
   "Other",
 ];

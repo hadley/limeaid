@@ -13,19 +13,9 @@ export type GroceryItem = {
   department: string | null;
 };
 
-// Canonical names treated as pantry staples even though Mealime gives them
-// quantities — everyone keeps these on hand, so they go in the "check you
-// have these" section instead of the shopping list.
-export const STAPLE_NAMES = new Set([
-  "garlic",
-  "chicken or vegetable broth",
-  "egg",
-  "eggs",
-  "basmati rice",
-  "tomato paste",
-  "frozen peas",
-  "frozen corn",
-]);
+// Canonical names classified as "Pantry Staples" in ingredient_departments
+// (see db/seed/ingredient-departments.csv) go in the "check you have these"
+// section even though Mealime gives them quantities.
 
 // (Display order for department sections lives in ./departments, pg-free
 // so client components can import it.)
@@ -46,6 +36,11 @@ export async function generateList(weekStart: string): Promise<void> {
     planId,
   ]);
 
+  const stapleRows = await pool.query<{ name: string }>(
+    "select name from ingredient_departments where department = 'Pantry Staples'",
+  );
+  const stapleNames = new Set(stapleRows.rows.map((r) => r.name));
+
   const { rows } = await pool.query<{ ingredients: Ingredient[] }>(
     `select r.ingredients
      from meal_plan_entries e
@@ -60,7 +55,7 @@ export async function generateList(weekStart: string): Promise<void> {
   const staples = new Set<string>();
   for (const { ingredients } of rows) {
     for (const ing of ingredients) {
-      if (ing.quantity == null || STAPLE_NAMES.has(ing.name)) {
+      if (ing.quantity == null || stapleNames.has(ing.name)) {
         staples.add(ing.name);
       } else {
         const key = `${ing.name}${ing.unit ?? ""}`;

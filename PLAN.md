@@ -34,14 +34,14 @@ filtering, pantry tracking, serving scaling, multi-user.
   search-URL handoff on the item name, and a Regenerate button that rebuilds
   from current picks (resets checkmarks). `/` redirects adaptively to plan
   or shop (cook → shop until `/cook` exists; TODO in
-  `web/src/app/page.tsx`). Extra staples (garlic, broth, eggs, basmati rice,
-  tomato paste, frozen peas/corn) forced into the staples section via
-  `STAPLE_NAMES` in `web/src/lib/shop.ts`; clicking an item's HEB link also
-  checks it off. To-buy items group by department (alphabetical within) once
-  `ingredient_departments` is seeded from
-  `db/seed/ingredient-departments.csv` (see
-  `scrape-recipes/classify-departments.R`, LLM batch classification —
-  headings hidden until the mapping distinguishes items).
+  `web/src/app/page.tsx`). Clicking an item's HEB link also checks it off.
+  To-buy items group by department (alphabetical within) from
+  `ingredient_departments`, seeded from
+  `db/seed/ingredient-departments.csv` (289 names; produced by
+  `scrape-recipes/classify-departments.R`, LLM batch classification).
+  Department "Pantry Staples" in that CSV (garlic, broth, eggs, basmati
+  rice, tomato paste, frozen peas/corn) routes items into the staples
+  section even though Mealime gives them quantities.
 - **Navbar**: week dropdown (`WeekSelector`, navigates same stage to the
   chosen week) and a gear settings menu holding the novelty slider;
   per-page prev/next week nav removed. Plan page has the same text/protein
