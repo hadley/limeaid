@@ -71,6 +71,33 @@ parse_quantity <- function(q) {
   list(quantity = quantity, unit = words)
 }
 
+# --- protein classification ---------------------------------------------------
+# Keyword match against canonical ingredient names. All matching categories
+# are kept (in rule order) as a `proteins` array, so a dish can be both
+# chicken and pork (e.g. wrapped in prosciutto); empty array = vegetarian.
+# Patterns match main-dish forms only, so seasonings (broth, fish sauce,
+# anchovy) don't classify.
+
+protein_patterns <- c(
+  chicken = "chicken (breast|thigh|drumstick|wing)|ground chicken",
+  beef    = "ground beef|steak|striploin|ribeye|flank steak",
+  pork    = "pork chop|pork sausage|ground pork|prosciutto|bacon",
+  lamb    = "lamb",
+  turkey  = "turkey",
+  seafood = "salmon|shrimp|cod|tilapia|tuna|halibut|mahi|sole|fish fillet|scallop|mussel|clam|crab|lobster",
+  tofu    = "tofu|tempeh|vegan sausage",
+  egg     = "^eggs?$"
+)
+
+classify_proteins <- function(names) {
+  matched <- names(protein_patterns)[vapply(
+    protein_patterns,
+    \(pat) any(grepl(pat, names, ignore.case = TRUE)),
+    logical(1)
+  )]
+  I(as.list(matched)) # keeps [] / ["pork"] as JSON arrays under auto_unbox
+}
+
 canonical_name <- function(x) {
   x <- tolower(x)
   # "butter, unsalted" -> "unsalted butter" (no singularization)
@@ -142,6 +169,7 @@ for (f in files) {
     source = "mealime",
     source_url = paste0("https://www.mealime.com/recipes/", slug, "/", pr$id),
     category = pp$schemaMetadata$category,
+    proteins = classify_proteins(vapply(pr$line_items$ingredient_name, canonical_name, character(1))),
     total_time_minutes = as.integer(pr$cooking_minutes),
     yield = paste(pr$serving_count, "servings"),
     image_path = if (is.na(img)) NA else paste0("recipes-full/", img),

@@ -11,6 +11,7 @@ create table recipes (
                 check (source in ('mealime', 'imported', 'manual')),
   source_url    text,                          -- mealime url or origin site
   category      text,                          -- 'Dinner', 'Simple', etc.
+  proteins      text[] not null default '{}',  -- any of chicken/beef/pork/lamb/turkey/seafood/tofu/egg; empty = vegetarian
   total_time_minutes integer,                  -- parsed from ISO 8601; soft signal only
   yield         text,                          -- e.g. '2 servings'
   image_path    text,                          -- local file in app storage

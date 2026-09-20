@@ -68,6 +68,15 @@ working 2-servings US variant on Mealime itself (its "2 servings" link 404s).
   `<number> [(pkg size)] [unit words]`); package sizes stay in the unit
   (e.g. `can (15 oz)`) so grocery merging never mixes sizes, and names are
   canonicalized lowercase + comma-inversion only (no singularization).
+  Also emits `proteins` = array of all matched protein categories
+  (chicken/beef/pork/lamb/turkey/seafood/tofu/egg; [] = vegetarian),
+  stored as `text[]` in the schema. Multi-label by design — no
+  winner-take-all, so "Prosciutto-Wrapped Cod" = ["pork", "seafood"];
+  99 recipes have multiple proteins. Keyword match on canonical
+  ingredient names; patterns match main-dish forms only so seasonings
+  (broth, fish sauce, anchovy) don't classify. bacon/prosciutto are
+  pork. Known coverage gaps fixed by spot-checking: lamb, prosciutto,
+  sole.
 - `scrape-recipes/fix-metric-recipes.R`: superseded one-off fix for the old
   JSON-LD corpus; kept for history only.
 - Deleted: `scrape-recipes.R` / `scrape-images.R` (JSON-LD era; recoverable
