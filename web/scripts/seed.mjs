@@ -36,6 +36,32 @@ const schema = fs.readFileSync(path.join(repoRoot, "db/schema.sql"), "utf8");
 await client.query(schema);
 console.log("Schema applied");
 
+// Department mapping is optional (produced by classify-departments.R).
+const deptCsv = path.join(repoRoot, "db/seed/ingredient-departments.csv");
+if (fs.existsSync(deptCsv)) {
+  // Canonical names may contain commas, so parse the CSV properly (fields
+  // with commas are quoted by write.csv).
+  const parseCsvLine = (line) => {
+    const m = line.match(/^"((?:[^"]|"")*)",(.*)$/) || line.match(/^([^,]*),(.*)$/);
+    return m ? [m[1].replace(/""/g, '"'), m[2]] : null;
+  };
+  const lines = fs.readFileSync(deptCsv, "utf8").split("\n").filter(Boolean);
+  await client.query("truncate ingredient_departments");
+  let n = 0;
+  for (const line of lines.slice(1)) { // skip header
+    const parsed = parseCsvLine(line);
+    if (!parsed) continue;
+    await client.query(
+      "insert into ingredient_departments (name, department) values ($1, $2)",
+      parsed,
+    );
+    n++;
+  }
+  console.log(`Loaded ${n} ingredient departments`);
+} else {
+  console.log("No ingredient-departments.csv; skipping departments");
+}
+
 const lines = fs
   .readFileSync(path.join(repoRoot, "db/seed/recipes.jsonl"), "utf8")
   .split("\n")

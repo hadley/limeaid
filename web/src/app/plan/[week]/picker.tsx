@@ -1,26 +1,28 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { imageSrc } from "@/lib/images";
 import type { RecipeSummary } from "@/lib/db";
-import { gotoPage, setNovelty, togglePick } from "./actions";
+import { gotoPage, togglePick } from "./actions";
 
 type Page = { batch: RecipeSummary[]; idx: number; total: number };
 
 export function Picker({
   week,
+  q,
+  protein,
   initialPage,
   initialPicks,
-  initialNovelty,
 }: {
   week: string;
+  q: string;
+  protein: string;
   initialPage: Page;
   initialPicks: RecipeSummary[];
-  initialNovelty: number;
 }) {
   const [page, setPage] = useState(initialPage);
   const [picks, setPicks] = useState(initialPicks);
-  const [novelty, setNoveltyState] = useState(initialNovelty);
   const [pending, startTransition] = useTransition();
 
   const pickIds = new Set(picks.map((p) => String(p.id)));
@@ -32,13 +34,8 @@ export function Picker({
 
   const goto = (idx: number) =>
     startTransition(async () => {
-      setPage(await gotoPage(week, idx));
+      setPage(await gotoPage(week, idx, q, protein));
     });
-
-  const slide = (value: number) => {
-    setNoveltyState(value);
-    startTransition(() => setNovelty(value));
-  };
 
   return (
     <>
@@ -61,18 +58,6 @@ export function Picker({
             {page.idx + 1 < page.total ? "Next →" : "More →"}
           </button>
         </span>
-        <label className="muted">
-          Novelty
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.05}
-            value={novelty}
-            onChange={(e) => slide(Number(e.target.value))}
-          />
-          {novelty.toFixed(2)}
-        </label>
       </div>
 
       {picks.length > 0 && (
@@ -87,6 +72,9 @@ export function Picker({
               {p.name} ✕
             </button>
           ))}
+          <Link href={`/shop/${week}`} className="shop-button">
+            Shop →
+          </Link>
         </div>
       )}
 

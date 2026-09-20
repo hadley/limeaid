@@ -1,6 +1,6 @@
 "use server";
 
-import { ensurePlan, getPicks, setSetting, showPage } from "@/lib/plan";
+import { ensurePlan, getPicks, showPage } from "@/lib/plan";
 import { pool, type RecipeSummary } from "@/lib/db";
 
 export async function togglePick(
@@ -25,11 +25,8 @@ export async function togglePick(
 export async function gotoPage(
   weekStart: string,
   idx: number,
+  q: string,
+  protein: string,
 ): Promise<{ batch: RecipeSummary[]; idx: number; total: number }> {
-  return showPage(weekStart, idx);
-}
-
-export async function setNovelty(value: number): Promise<void> {
-  const s = Math.min(1, Math.max(0, value));
-  await setSetting("novelty", s);
+  return showPage(weekStart, idx, q, protein);
 }

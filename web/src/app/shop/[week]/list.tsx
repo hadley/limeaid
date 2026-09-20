@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { DEPARTMENT_ORDER } from "@/lib/departments";
 import type { GroceryItem } from "@/lib/shop";
 import { regenerate, toggleItem } from "./actions";
 
@@ -28,6 +29,25 @@ export function GroceryList({
   const staples = items.filter((i) => i.quantity == null);
   const checked = items.filter((i) => i.checked).length;
 
+  // Group to-buy items by department, alphabetical within each; unknown
+  // departments sort to "Other". Headings only appear when the department
+  // mapping actually distinguishes items.
+  const byDept = new Map<string, GroceryItem[]>();
+  for (const item of toBuy) {
+    const dept = item.department ?? "Other";
+    byDept.set(dept, [...(byDept.get(dept) ?? []), item]);
+  }
+  for (const list of byDept.values()) {
+    list.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  const depts = [...byDept.keys()].sort(
+    (a, b) =>
+      (DEPARTMENT_ORDER.indexOf(a) === -1 ? 99 : DEPARTMENT_ORDER.indexOf(a)) -
+      (DEPARTMENT_ORDER.indexOf(b) === -1 ? 99 : DEPARTMENT_ORDER.indexOf(b)),
+  );
+  const showHeadings = depts.length > 1;
+  staples.sort((a, b) => a.name.localeCompare(b.name));
+
   const row = (item: GroceryItem) => (
     <li key={item.id} className={item.checked ? "checked" : ""}>
       <label>
@@ -41,7 +61,11 @@ export function GroceryList({
           href={`https://www.heb.com/search?q=${encodeURIComponent(item.name)}`}
           target="_blank"
           rel="noreferrer"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            // Opening the HEB search means you're adding it to the cart.
+            if (!item.checked && !pending) toggle(item);
+          }}
         >
           {item.display}
         </a>
@@ -55,7 +79,11 @@ export function GroceryList({
         <p>
           <strong>{checked}</strong>/{items.length} checked
         </p>
-        <button onClick={rebuild} disabled={pending} title="Rebuild from this week's picks; resets checkmarks">
+        <button
+          onClick={rebuild}
+          disabled={pending}
+          title="Rebuild from this week's picks; resets checkmarks"
+        >
           Regenerate list
         </button>
       </div>
@@ -64,8 +92,19 @@ export function GroceryList({
         <p className="muted">No groceries yet — pick some dinners first.</p>
       ) : (
         <>
-          <h2>To buy</h2>
-          <ul className="grocery">{toBuy.map(row)}</ul>
+          {toBuy.length > 0 && !showHeadings && (
+            <>
+              <h2>To buy</h2>
+              <ul className="grocery">{toBuy.map(row)}</ul>
+            </>
+          )}
+          {showHeadings &&
+            depts.map((dept) => (
+              <section key={dept}>
+                <h2>{dept}</h2>
+                <ul className="grocery">{byDept.get(dept)!.map(row)}</ul>
+              </section>
+            ))}
           {staples.length > 0 && (
             <>
               <h2>Pantry staples</h2>

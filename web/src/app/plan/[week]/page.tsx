@@ -1,22 +1,25 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ensurePlan, getNovelty, getPicks, latestPage } from "@/lib/plan";
-import { isMonday, mondayOf, shiftWeek } from "@/lib/week";
+import { Suspense } from "react";
+import { ensurePlan, getPicks, latestPage } from "@/lib/plan";
+import { isMonday } from "@/lib/week";
+import { Filters } from "@/app/recipes/filters";
 import { Picker } from "./picker";
 
 export default async function PlanWeekPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ week: string }>;
+  searchParams: Promise<{ q?: string; protein?: string }>;
 }) {
   const { week } = await params;
+  const { q = "", protein = "" } = await searchParams;
   if (!isMonday(week)) notFound();
 
   await ensurePlan(week);
-  const [page, picks, novelty] = await Promise.all([
-    latestPage(week),
+  const [page, picks] = await Promise.all([
+    latestPage(week, q, protein),
     getPicks(week),
-    getNovelty(),
   ]);
 
   const label = new Date(week + "T12:00:00Z").toLocaleDateString("en-US", {
@@ -27,21 +30,17 @@ export default async function PlanWeekPage({
 
   return (
     <main className="container">
-      <nav className="week-nav">
-        <Link href={`/plan/${shiftWeek(week, -1)}`}>← Prev week</Link>
-        <strong>Week of {label}</strong>
-        <Link href={`/plan/${shiftWeek(week, 1)}`}>Next week →</Link>
-      </nav>
-      {week !== mondayOf() && (
-        <p className="muted">
-          <Link href={`/plan/${mondayOf()}`}>Jump to current week</Link>
-        </p>
-      )}
+      <h1>Week of {label}</h1>
+      <Suspense>
+        <Filters />
+      </Suspense>
       <Picker
+        key={`${q}|${protein}`}
         week={week}
+        q={q}
+        protein={protein}
         initialPage={JSON.parse(JSON.stringify(page))}
         initialPicks={JSON.parse(JSON.stringify(picks))}
-        initialNovelty={novelty}
       />
     </main>
   );

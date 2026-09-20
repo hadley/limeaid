@@ -10,7 +10,25 @@ export type GroceryItem = {
   unit: string | null;
   checked: boolean;
   position: number;
+  department: string | null;
 };
+
+// Canonical names treated as pantry staples even though Mealime gives them
+// quantities — everyone keeps these on hand, so they go in the "check you
+// have these" section instead of the shopping list.
+export const STAPLE_NAMES = new Set([
+  "garlic",
+  "chicken or vegetable broth",
+  "egg",
+  "eggs",
+  "basmati rice",
+  "tomato paste",
+  "frozen peas",
+  "frozen corn",
+]);
+
+// (Display order for department sections lives in ./departments, pg-free
+// so client components can import it.)
 
 function displayFor(name: string, quantity: number, unit: string | null) {
   const qty = formatQty(quantity);
@@ -42,7 +60,7 @@ export async function generateList(weekStart: string): Promise<void> {
   const staples = new Set<string>();
   for (const { ingredients } of rows) {
     for (const ing of ingredients) {
-      if (ing.quantity == null) {
+      if (ing.quantity == null || STAPLE_NAMES.has(ing.name)) {
         staples.add(ing.name);
       } else {
         const key = `${ing.name}${ing.unit ?? ""}`;
@@ -72,26 +90,20 @@ export async function generateList(weekStart: string): Promise<void> {
   }
 }
 
+const LIST_SQL = `select g.id, g.name, g.display, g.quantity, g.unit, g.checked,
+       g.position, d.department
+  from grocery_items g
+  join meal_plans p on p.id = g.meal_plan_id
+  left join ingredient_departments d on d.name = g.name
+  where p.week_start = $1
+  order by g.position`;
+
 export async function getList(weekStart: string): Promise<GroceryItem[]> {
-  const { rows } = await pool.query<GroceryItem>(
-    `select g.id, g.name, g.display, g.quantity, g.unit, g.checked, g.position
-     from grocery_items g
-     join meal_plans p on p.id = g.meal_plan_id
-     where p.week_start = $1
-     order by g.position`,
-    [weekStart],
-  );
+  const { rows } = await pool.query<GroceryItem>(LIST_SQL, [weekStart]);
   if (rows.length > 0) return rows;
 
   // Lazy generation on first visit (only if the week has picks).
   await generateList(weekStart);
-  const again = await pool.query<GroceryItem>(
-    `select g.id, g.name, g.display, g.quantity, g.unit, g.checked, g.position
-     from grocery_items g
-     join meal_plans p on p.id = g.meal_plan_id
-     where p.week_start = $1
-     order by g.position`,
-    [weekStart],
-  );
+  const again = await pool.query<GroceryItem>(LIST_SQL, [weekStart]);
   return again.rows;
 }

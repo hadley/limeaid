@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { weekStage } from "@/lib/plan";
+import { getNovelty, getWeeks, weekStage } from "@/lib/plan";
 import { mondayOf } from "@/lib/week";
+import { SettingsMenu, WeekSelector } from "./nav";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,7 +14,11 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const week = mondayOf();
-  const s = await weekStage(week);
+  const [s, weeks, novelty] = await Promise.all([
+    weekStage(week),
+    getWeeks(),
+    getNovelty(),
+  ]);
 
   const pills = [
     { label: "Plan", count: `${s.picks}`, href: `/plan/${week}`, stage: "plan" },
@@ -60,6 +65,8 @@ export default async function RootLayout({
           <Link href="/recipes" className="muted">
             Recipes
           </Link>
+          <WeekSelector weeks={weeks} />
+          <SettingsMenu novelty={novelty} />
         </header>
         {children}
       </body>

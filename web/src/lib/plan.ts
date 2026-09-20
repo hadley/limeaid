@@ -1,4 +1,5 @@
 import { pool, type RecipeSummary } from "./db";
+import { mondayOf } from "./week";
 
 const TAU = 0.3; // softmax temperature
 const BATCH = 12;
@@ -29,8 +30,9 @@ type Candidate = {
   bucket: string;
 };
 
-// Hard filters applied in SQL: no disliked, nothing cooked in the last 14 days.
-async function candidates(): Promise<Candidate[]> {
+// Hard filters applied in SQL: no disliked, nothing cooked in the last 14
+// days, plus the user's text/protein filter.
+async function candidates(q = "", protein = ""): Promise<Candidate[]> {
   const { rows } = await pool.query<{
     id: string;
     rating: string | null;
@@ -44,9 +46,16 @@ async function candidates(): Promise<Candidate[]> {
      left join ratings rt on rt.recipe_id = r.id
      left join meal_plan_entries e on e.recipe_id = r.id and e.cooked
      where coalesce(rt.rating, '') <> 'disliked'
+       and ($1 = '' or r.name ilike '%' || $1 || '%')
+       and (
+         $2 = ''
+         or ($2 = 'vegetarian' and cardinality(r.proteins) = 0)
+         or ($2 <> 'vegetarian' and $2 = any(r.proteins))
+       )
      group by r.id, rt.rating, r.proteins
      having max(e.cooked_at) is null
         or max(e.cooked_at) < now() - interval '14 days'`,
+    [q, protein],
   );
   return rows.map((r) => ({
     id: Number(r.id),
@@ -117,19 +126,27 @@ async function recipesByIds(ids: number[]): Promise<RecipeSummary[]> {
   return rows;
 }
 
-// Pages of BATCH recipes, persisted per week in settings as
-// `plan-pages:<week>` (array of id arrays). Paging forward past the last
-// page draws a fresh batch without replacement against everything already
-// shown this week; the history resets when the pool runs low.
-async function getPages(weekStart: string): Promise<number[][]> {
-  return getSetting<number[][]>(`plan-pages:${weekStart}`, []);
+// Pages of BATCH recipes, persisted per week and filter combination in
+// settings as `plan-pages:<week>:<q>|<protein>` (array of id arrays). Paging
+// forward past the last page draws a fresh batch without replacement against
+// everything already shown for that key; the history resets when the pool
+// runs low.
+function pagesKey(weekStart: string, q: string, protein: string) {
+  return `plan-pages:${weekStart}:${q.toLowerCase()}|${protein}`;
+}
+
+async function getPages(key: string): Promise<number[][]> {
+  return getSetting<number[][]>(key, []);
 }
 
 export async function showPage(
   weekStart: string,
   idx: number,
+  q = "",
+  protein = "",
 ): Promise<{ batch: RecipeSummary[]; idx: number; total: number }> {
-  let pages = await getPages(weekStart);
+  const key = pagesKey(weekStart, q, protein);
+  let pages = await getPages(key);
 
   if (idx < 0) idx = 0;
   if (idx >= pages.length) {
@@ -137,12 +154,14 @@ export async function showPage(
     const novelty = await getNovelty();
     const now = Date.now();
     let shown = pages.flat();
-    let available = (await candidates()).filter((c) => !shown.includes(c.id));
+    let available = (await candidates(q, protein)).filter(
+      (c) => !shown.includes(c.id),
+    );
 
     // Pool exhausted (or nearly): reset the page history and start over.
     if (available.length < BATCH) {
       pages = [];
-      available = await candidates();
+      available = await candidates(q, protein);
     }
 
     const scored = available.map((c) => ({
@@ -151,26 +170,33 @@ export async function showPage(
     }));
     const batch = stratifiedSample(scored, BATCH);
     pages = [...pages, batch.map((b) => b.id)];
-    await setSetting(`plan-pages:${weekStart}`, pages);
+    await setSetting(key, pages);
     idx = pages.length - 1;
   }
 
   return { batch: await recipesByIds(pages[idx]), idx, total: pages.length };
 }
 
-// Latest page, drawing the first one if the week has none yet.
+// Latest page, drawing the first one if this key has none yet.
 export async function latestPage(
   weekStart: string,
+  q = "",
+  protein = "",
 ): Promise<{ batch: RecipeSummary[]; idx: number; total: number }> {
-  const pages = await getPages(weekStart);
-  return showPage(weekStart, Math.max(0, pages.length - 1));
+  const pages = await getPages(pagesKey(weekStart, q, protein));
+  return showPage(weekStart, Math.max(0, pages.length - 1), q, protein);
 }
 
 export async function ensurePlan(weekStart: string): Promise<number> {
+  // Select-first (not upsert) so page loads don't burn identity values.
   const { rows } = await pool.query<{ id: string }>(
-    `insert into meal_plans (week_start) values ($1)
-     on conflict (week_start) do update set week_start = excluded.week_start
-     returning id`,
+    `with existing as (select id from meal_plans where week_start = $1),
+          ins as (
+            insert into meal_plans (week_start)
+            select $1 where not exists (select 1 from existing)
+            returning id
+          )
+     select id from existing union all select id from ins limit 1`,
     [weekStart],
   );
   return Number(rows[0].id);
@@ -189,6 +215,15 @@ export async function getPicks(weekStart: string): Promise<RecipeSummary[]> {
     [weekStart],
   );
   return rows;
+}
+
+// Weeks that have plans, newest first, with the current week always included.
+export async function getWeeks(): Promise<string[]> {
+  const { rows } = await pool.query<{ w: string }>(
+    "select to_char(week_start, 'YYYY-MM-DD') as w from meal_plans",
+  );
+  const weeks = new Set([mondayOf(), ...rows.map((r) => r.w)]);
+  return [...weeks].sort().reverse();
 }
 
 // Stage of the weekly loop, for the navbar pills and adaptive redirect.

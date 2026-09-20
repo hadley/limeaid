@@ -183,13 +183,56 @@ body {
   color: var(--muted);
 }
 
-/* plan page */
-.week-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 0.5rem 0;
+.week-select {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
 }
+
+.settings-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.icon-button {
+  border: none;
+  background: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+}
+
+.icon-button:hover {
+  color: #222;
+}
+
+.settings-menu .dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.25rem);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 0.75rem 1rem;
+  width: 240px;
+  z-index: 10;
+}
+
+.settings-menu .dropdown label {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.settings-menu .dropdown input[type="range"] {
+  width: 100%;
+}
+
+/* plan page */
 
 .plan-toolbar {
   display: flex;
@@ -228,6 +271,15 @@ body {
   padding: 0.25rem 0.75rem;
   font-size: 0.85rem;
   cursor: pointer;
+}
+
+.shop-button {
+  border-radius: 999px;
+  background: #222;
+  color: #fff;
+  padding: 0.25rem 0.9rem;
+  font-size: 0.85rem;
+  text-decoration: none;
 }
 
 .card-button {

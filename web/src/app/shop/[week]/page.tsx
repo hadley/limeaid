@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPicks } from "@/lib/plan";
 import { getList } from "@/lib/shop";
-import { isMonday, mondayOf, shiftWeek } from "@/lib/week";
+import { isMonday } from "@/lib/week";
 import { GroceryList } from "./list";
 
 export default async function ShopWeekPage({
@@ -23,16 +23,7 @@ export default async function ShopWeekPage({
 
   return (
     <main className="container">
-      <nav className="week-nav">
-        <Link href={`/shop/${shiftWeek(week, -1)}`}>← Prev week</Link>
-        <strong>Week of {label}</strong>
-        <Link href={`/shop/${shiftWeek(week, 1)}`}>Next week →</Link>
-      </nav>
-      {week !== mondayOf() && (
-        <p className="muted">
-          <Link href={`/shop/${mondayOf()}`}>Jump to current week</Link>
-        </p>
-      )}
+      <h1>Week of {label}</h1>
       {picks.length === 0 && (
         <p className="muted">
           Nothing planned this week — <Link href={`/plan/${week}`}>pick some dinners</Link>.
