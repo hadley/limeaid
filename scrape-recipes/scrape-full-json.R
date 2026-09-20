@@ -3,29 +3,32 @@ library(rvest)
 library(purrr)
 library(dplyr)
 
-dir.create("recipes", showWarnings = FALSE)
+dir.create("recipes-full", showWarnings = FALSE)
 
 index <- readr::read_csv("mealime-index.csv") |>
-  mutate(json_path = file.path("recipes", paste0(slug, ".json")))
+  mutate(json_path = file.path("recipes-full", paste0(slug, ".json")))
 
 fetch_parallel <- function(urls) {
   reqs <- map(urls, \(url) request(url) |> req_throttle(rate = 100 / 1))
   req_perform_parallel(reqs, on_error = "continue", progress = TRUE)
 }
 
-extract_recipe <- function(resp) {
+# Extract the embedded Next.js __NEXT_DATA__ JSON — contains per-step
+# quantities (steps[].secondary_message), structured line_items, full
+# nutrition, and variant metadata that the JSON-LD lacks.
+extract_next_data <- function(resp) {
   html <- resp_body_html(resp)
-  ld_json <- html_element(html, "script[type='application/ld+json']") |> html_text()
-  parsed <- jsonlite::fromJSON(ld_json)
-  stopifnot(identical(parsed[["@type"]], "Recipe"))
-  jsonlite::prettify(ld_json)
+  json <- html_element(html, "script#__NEXT_DATA__") |> html_text()
+  parsed <- jsonlite::fromJSON(json)
+  stopifnot(identical(parsed$page, "/recipes/[slug]/[variantId]"))
+  jsonlite::prettify(json)
 }
 
 # Save JSON for each successful response; returns the rows that succeeded
 save_recipes <- function(df, resps) {
   ok <- resps_ok(resps)
   df <- df[ok, ]
-  json <- map(resps[ok], possibly(extract_recipe, otherwise = NULL))
+  json <- map(resps[ok], possibly(extract_next_data, otherwise = NULL))
   good <- !map_lgl(json, is.null)
   walk2(json[good], df$json_path[good], writeLines)
   df[good, ]

@@ -15,8 +15,8 @@ create table recipes (
   yield         text,                          -- e.g. '2 servings'
   image_path    text,                          -- local file in app storage
   image_url     text,                          -- original CDN url (fallback)
-  ingredients   jsonb not null,                -- array of raw strings, e.g. ["1 lime", ...]
-  instructions  jsonb not null,                -- array of step strings, ordered
+  ingredients   jsonb not null,                -- array of {name, quantity?}; quantity absent = pantry staple
+  instructions  jsonb not null,                -- array of {text, amounts?}, ordered; amounts = per-step qty strings
   created_at    timestamptz not null default now()
 );
 
