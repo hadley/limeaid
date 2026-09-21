@@ -134,6 +134,15 @@ page per step (text + per-step amounts from the `instructions` JSONB).
 Finishing marks the entry cooked (`cooked` + `cooked_at`) and prompts for a
 rating.
 
+TODO: the ingredients page in cook mode is currently sorted by grocery
+department, but what cooking actually wants is sort by *storage location* —
+fridge / pantry / spices / bench (salt, pepper, oil, garlic — the things
+that live next to the stove). That needs a new per-ingredient
+classification, separate from `ingredient_departments` (which is about the
+grocery store, not the kitchen). Likely a new table (e.g.
+`ingredient_locations`) seeded by an LLM batch pass like
+`classify-departments.R`, then re-sort `getCookEntry`'s ingredients by it.
+
 ## Architecture
 
 - **Frontend**: Next.js (React), mobile-first — plan on desktop, shop and

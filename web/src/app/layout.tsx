@@ -31,7 +31,7 @@ export default async function RootLayout({
     {
       label: "Cook",
       count: `${s.cooked}/${s.picks}`,
-      href: null,
+      href: `/cook/${week}`,
       stage: "cook",
     },
   ];
@@ -42,25 +42,15 @@ export default async function RootLayout({
         <header className="navbar">
           <span className="brand">Mealime</span>
           <nav className="pills">
-            {pills.map((p) =>
-              p.href ? (
-                <Link
-                  key={p.label}
-                  href={p.href}
-                  className={`pill${s.stage === p.stage ? " active" : ""}`}
-                >
-                  {p.label} · {p.count}
-                </Link>
-              ) : (
-                <span
-                  key={p.label}
-                  className={`pill disabled${s.stage === p.stage ? " active" : ""}`}
-                  title="Coming in a later stage"
-                >
-                  {p.label} · {p.count}
-                </span>
-              ),
-            )}
+            {pills.map((p) => (
+              <Link
+                key={p.label}
+                href={p.href}
+                className={`pill${s.stage === p.stage ? " active" : ""}`}
+              >
+                {p.label} · {p.count}
+              </Link>
+            ))}
           </nav>
           <Link href="/recipes" className="muted">
             Recipes

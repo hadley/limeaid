@@ -324,3 +324,198 @@ body {
   text-decoration: line-through;
   color: var(--muted);
 }
+
+/* cook week list */
+.card.cooked {
+  opacity: 0.55;
+}
+
+.card.cooked img {
+  filter: grayscale(0.6);
+}
+
+.card-body .cook-button {
+  display: inline-block;
+  margin-top: 0.5rem;
+  border-radius: 999px;
+  background: #222;
+  color: #fff;
+  padding: 0.25rem 0.9rem;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.card-body .uncook {
+  margin-top: 0.5rem;
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* cook mode (step-through) */
+.container.cook {
+  max-width: 640px;
+}
+
+.cook-mode {
+  /* Room for the fixed bottom nav bar. */
+  padding-bottom: 5.5rem;
+}
+
+.cook-toolbar {
+  justify-content: space-between;
+}
+
+.cook-menu-button {
+  color: #222;
+}
+
+.cook-menu {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.cook-menu button {
+  display: block;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #eee;
+  background: #fff;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+  /* One-line preview of each step. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cook-menu button:last-child {
+  border-bottom: none;
+}
+
+.cook-menu button.current {
+  font-weight: 700;
+}
+
+.cook-menu-steps {
+  display: flex;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #eee;
+}
+
+.cook-menu-steps button {
+  width: auto;
+  flex: 1 0 2.5rem;
+  border-bottom: none;
+  border-right: 1px solid #eee;
+  text-align: center;
+  padding: 0.6rem 0.25rem;
+}
+
+.cook-progress {
+  height: 4px;
+  background: #eee;
+  border-radius: 2px;
+  margin: 0.5rem 0 1rem;
+}
+
+.cook-progress > div {
+  height: 100%;
+  background: #222;
+  border-radius: 2px;
+  transition: width 0.2s;
+}
+
+.cook-ingredients {
+  font-size: 1.1rem;
+  line-height: 1.9;
+  padding-left: 1.25rem;
+}
+
+.cook-amounts {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cook-amounts li {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #f6f6f6;
+  padding: 0.35rem 0.9rem;
+  font-size: 1rem;
+}
+
+.cook-step {
+  font-size: 1.4rem;
+  line-height: 1.5;
+}
+
+.cook-rating {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.cook-rating button {
+  padding: 0.6rem 1.25rem;
+  font-size: 1rem;
+  border: 1px solid #222;
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.cook-rating button.selected {
+  background: #222;
+  color: #fff;
+}
+
+.cook-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+  background: #fff;
+  border-top: 1px solid var(--border);
+}
+
+.cook-nav button {
+  flex: 1 1 50%;
+  padding: 1.1rem 1rem;
+  font-size: 1.15rem;
+  border: 1px solid #222;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.cook-nav button.primary {
+  background: #222;
+  color: #fff;
+}
+
+.cook-nav button:disabled {
+  border-color: var(--border);
+  color: var(--muted);
+  cursor: default;
+}
+
+.cook-nav button.primary:disabled {
+  background: var(--border);
+  border-color: var(--border);
+}
