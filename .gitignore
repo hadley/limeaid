@@ -3,4 +3,5 @@
 recipes/
 recipes-full/
 db/seed/*-batch.json
+db/seed/*.batch.json
 db/mealime.sqlite
