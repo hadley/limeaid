@@ -22,11 +22,12 @@ filtering, pantry tracking, serving scaling, multi-user.
   (`/recipes/[slug]`), shared-password middleware (`APP_PASSWORD`).
 - **Plan stage: done.** `/plan/[week]` (Monday `YYYY-MM-DD`; `/plan` and `/`
   redirect to current week) with scored softmax sampling (τ=0.3, stratified
-  by protein bucket), 12-card batches persisted per-week in `settings`
-  (`plan-batch:`/`plan-shown:` keys), tap-to-pick toggling into
-  `meal_plan_entries`, and the novelty slider (`settings.novelty`, default
-  0.3). Navbar shows Plan/Shop/Cook pills; Cook is display-only until its
-  stage is built.
+  by protein bucket), 12-card pages persisted per week+filter in `settings`
+  (`plan-pages:<week>:<q>|<protein>` keys; prev browses history, next draws
+  fresh), tap-to-pick toggling into `meal_plan_entries`, and a "Shop →"
+  button once anything is picked. Navbar shows Plan/Shop/Cook pills; Cook
+  is display-only until its stage is built.
+- **Cook stage: not started.** See Components below.
 - **Shop stage: done.** `/shop/[week]` lazily generates `grocery_items`
   from the week's picks (merge by (name, unit), null-quantity → pantry
   staples section, unicode-fraction display), checkbox persistence, HEB
@@ -80,20 +81,23 @@ unrated — the selection scoring handles this.
 
 ### Selection (`/plan/[week]`)
 
-Paged recommendation grid (~12 cards/page). User taps to select until they
-have the number they want; picks persist immediately to `meal_plans` +
-`meal_plan_entries` so the plan survives reloads. Paging or re-roll draws a
-fresh sample without replacement against recipes already shown this session.
+Paged recommendation grid (12 cards/page) with the same text/protein filter
+as the catalog. User taps to select until they have the number they want;
+picks persist immediately to `meal_plans` + `meal_plan_entries` so the plan
+survives reloads. Prev/next paging: next past the last page draws a fresh
+sample without replacement against recipes already shown for that
+week+filter; the history resets when the unseen pool runs low.
 
 - **Hard filters**: disliked, and anything cooked in the last 14 days
-  (`meal_plan_entries.cooked_at`).
+  (`meal_plan_entries.cooked_at`); plus the page's text/protein filter.
 - **Scoring**: `rating_pts` = loved 2 / liked 1 / unrated 0.5;
   `recency_pts` = min(days since cooked, 365)/365 (never cooked = 1);
   `novelty_pts` = 1 if never cooked else 0.25 × recency_pts.
   `score = (1-s)(rating_pts × recency_pts) + s × novelty_pts`, where `s` is
-  the persisted novelty slider (`settings` table). Scales intentionally
-  unequal so new recipes only outdraw a loved favourite past the midpoint.
-- **Sampling**: softmax, `p ∝ exp(score/τ)`, τ ≈ 0.3 to start.
+  the persisted novelty slider (`settings.novelty`, default 0.3, edited from
+  the navbar gear menu). Scales intentionally unequal so new recipes only
+  outdraw a loved favourite past the midpoint.
+- **Sampling**: softmax, `p ∝ exp(score/τ)`, τ = 0.3.
 - **Protein spread**: stratified weighted sampling across protein buckets so
   no page is dominated by one protein. `recipes.proteins` is a multi-label
   `text[]` (done at import; 298 vegetarian, 218 chicken, 171 seafood, 153
@@ -104,13 +108,17 @@ fresh sample without replacement against recipes already shown this session.
 Grocery list generated from the week's recipes: merge by (name, unit),
 summing quantities — canonical names and package-sizes-in-units
 (`can (15 oz)`) from the import make naive merging safe. Quantities
-displayed with fractions (1½ lb). Two sections: **to buy**, then **pantry
-staples** (the null-quantity ingredients: salt, oil, spices — grouped, not
-silently dropped) with the prompt "check you have these". Check-off
-persists to `grocery_items.checked`. No manual items.
+displayed with fractions (1½ lb). **To buy** is grouped by grocery-store
+department (Produce → Meat & Seafood → Dairy & Eggs → Bakery → Frozen →
+Pantry & Dry Goods; from `ingredient_departments`, alphabetical within);
+then a **pantry staples** section (null-quantity ingredients — salt, oil,
+spices — plus anything labeled department "Pantry Staples" in the CSV, like
+garlic, broth, and eggs) with the prompt "check you have these". Check-off
+persists to `grocery_items.checked`. No manual items. A Regenerate button
+rebuilds the list from current picks, resetting checkmarks.
 
 **HEB handoff**: tapping an item opens `https://www.heb.com/search?q=<name>`
-in new-tab 
+in a new tab and checks the item off (checkbox toggles independently).
 
 ### Cooking (`/cook/[week]`, `/cook/[week]/[entryId]`)
 
@@ -125,8 +133,10 @@ rating.
   cook from a phone.
 - **Backend**: route handlers + server actions (rating upsert, plan entry
   add/remove, grocery toggle, cooked toggle).
-- **Database**: Postgres on Neon; schema is `db/schema.sql`; seed via a
-  Node script reading `db/seed/recipes.jsonl` (the SQLite loader shows the
-  field mapping). Images copied from `recipes-full/` into static storage.
+- **Database**: Postgres on Neon (local Postgres in dev); schema is
+  `db/schema.sql`; seed via `web/scripts/seed.mjs` reading
+  `db/seed/recipes.jsonl` (+ `ingredient-departments.csv` when present).
+  Images copied from `recipes-full/` into `web/public/recipes/` (move to
+  blob storage for Vercel — 265 MB).
 - **Hosting**: Vercel. **Auth**: middleware password check via env var.
 - Later polish: PWA touches (add-to-homescreen, offline grocery list).
