@@ -14,9 +14,8 @@ filtering, pantry tracking, serving scaling, multi-user.
   `recipes-full/`. See AGENTS.md for scraper details.
 - **Seed: complete.** `db/seed/recipes.jsonl` — 1224 dinner recipes matching
   the `recipes` table in `db/schema.sql` (authoritative schema).
-- **Schema: proven** via a throwaway R/Shiny prototype (`app/app.R`, SQLite
-  via `db/load-sqlite.R`) exercising browse, ratings, plan, and shopping
-  list. Disposable — the real app is Next.js (below).
+- **Schema: proven** via a throwaway R/Shiny prototype (deleted; see git
+  history) that exercised browse, ratings, plan, and shopping list.
 - **Stage 1 (foundation + catalog): done.** `web/` Next.js app seeded with
   1224 recipes (`npm run seed` in `web/`, DATABASE_URL in `web/.env.local`),
   browse (`/recipes`) with search + protein filter, detail
