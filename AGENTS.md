@@ -55,8 +55,13 @@ working 2-servings US variant on Mealime itself (its "2 servings" link 404s).
   the "2 servings" link on the 4-servings page; pass 3 detects saved JSONs
   whose `serving_count != 2` (pass 2 landed 67 old recipes on 4-servings
   metric pages) and re-scrapes them via the "US Units" link followed by the
-  "2 servings" link. Resumes on re-run by skipping slugs whose .json
-  already exists.
+  "2 servings" link. Pass 4 detects saved JSONs whose
+  `publishedRecipe$units != "US"` (94 recipes: pass 2's "2 servings" link
+  can land on 2-servings METRIC pages, invisible to pass 3's serving_count
+  check) and re-scrapes the 2-servings US variant from `altVariants`
+  (`serving_count == 2 & unit_family_id == 2`), trying each candidate id
+  until one fetches and verifies (some candidate ids are dead). Resumes on
+  re-run by skipping slugs whose .json already exists.
 - `scrape-recipes/import-recipes.R`: reads `recipes-full/*.json`, filters to
   `schemaMetadata$category == "Dinner"` (1224 of 1607), writes
   `db/seed/recipes.jsonl` matching the `recipes` table in db/schema.sql.
@@ -72,7 +77,10 @@ working 2-servings US variant on Mealime itself (its "2 servings" link 404s).
   (chicken/beef/pork/lamb/turkey/seafood/tofu/egg; [] = vegetarian),
   stored as `text[]` in the schema. Multi-label by design — no
   winner-take-all, so "Prosciutto-Wrapped Cod" = ["pork", "seafood"];
-  99 recipes have multiple proteins. Keyword match on canonical
+  99 recipes have multiple proteins. Community ratings come from
+  `altVariants$average_rating` (0–1 scale, ×5) + `rating_count` — NOT
+  `schemaMetadata$reviewScore`, which is missing for most recipes
+  (only 1 of 1224 lacks a rating via altVariants). Keyword match on canonical
   ingredient names; patterns match main-dish forms only so seasonings
   (broth, fish sauce, anchovy) don't classify. bacon/prosciutto are
   pork. Known coverage gaps fixed by spot-checking: lamb, prosciutto,

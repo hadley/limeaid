@@ -161,14 +161,24 @@ for (f in files) {
     list(text = pr$instructions$primary_message[i], amounts = amounts)
   })
 
+  scalar <- function(x) if (is.null(x) || length(x) == 0) NA else x
+
+  # Community rating from altVariants (0-1 average + count) — much better
+  # coverage than schemaMetadata's reviewScore/reviewCount
+  av <- pp$altVariants
+  rating <- av$average_rating[1] * 5
+  rating_count <- av$rating_count[1]
+  if (is.na(rating) || rating == 0) { rating <- NA; rating_count <- NA }
+
   n <- n + 1L
   out[[n]] <- list(
     slug = slug,
     mealime_id = as.integer(pr$id),
     name = pr$name,
-    source = "mealime",
     source_url = paste0("https://www.mealime.com/recipes/", slug, "/", pr$id),
     category = pp$schemaMetadata$category,
+    community_rating = scalar(round(rating, 2)),
+    community_rating_count = scalar(as.integer(rating_count)),
     proteins = classify_proteins(vapply(pr$line_items$ingredient_name, canonical_name, character(1))),
     total_time_minutes = as.integer(pr$cooking_minutes),
     yield = paste(pr$serving_count, "servings"),

@@ -65,7 +65,9 @@ got <- bind_rows(got, save_recipes(retry[page_ok, ][has_link, ], resps2))
 # --- Pass 3: fix wrong variants. Some pass-2 scrapes of old recipes landed
 # on 4-servings metric pages. Detect them by serving_count in the saved JSON,
 # then navigate explicitly: follow "US Units" first, then "2 servings" on
-# that page (following "2 servings" alone keeps the metric units) ---
+# that page (following "2 servings" alone keeps the metric units).
+# Pass 4 below additionally catches 2-servings METRIC pages (serving_count
+# is right, units are wrong), which this serving_count check cannot see ---
 is_wrong_variant <- function(path) {
   pr <- jsonlite::fromJSON(path)$props$pageProps$publishedRecipe
   !isTRUE(pr$serving_count == 2)
@@ -114,4 +116,53 @@ if (nrow(wrong) > 0) {
     warning("Still wrong variant after pass 3: ", paste(basename(still_wrong), collapse = ", "))
   }
   message("Pass 3: re-scraped ", nrow(got3), " of ", nrow(wrong), " wrong-variant recipes")
+}
+
+# --- Pass 4: fix metric units. Pass 2's "2 servings" link can land on a
+# 2-servings METRIC page for old recipes, which pass 3's serving_count check
+# can't detect. Detect via publishedRecipe$units != "US" and re-scrape the
+# 2-servings US variant directly from altVariants
+# (serving_count == 2 & unit_family_id == 2) ---
+find_metric <- function(path) {
+  pr <- jsonlite::fromJSON(path)$props$pageProps$publishedRecipe
+  isTRUE(pr$units != "US")
+}
+existing <- index$json_path[file.exists(index$json_path)]
+metric <- index |> filter(json_path %in% keep(existing, find_metric))
+
+if (nrow(metric) > 0) {
+  # altVariants lists several 2-servings US candidates; some are dead ids,
+  # so try each in turn until one fetches and verifies as US + 2 servings
+  candidate_ids <- map(metric$json_path, \(path) {
+    pp <- jsonlite::fromJSON(path)$props$pageProps
+    pp$altVariants |>
+      filter(serving_count == 2, unit_family_id == 2) |>
+      pull(id)
+  })
+
+  fetch_verified <- function(slug, ids) {
+    for (id in ids) {
+      url <- paste0("https://www.mealime.com/recipes/", slug, "/", id)
+      json <- tryCatch(
+        request(url) |> req_throttle(rate = 100 / 1) |> req_perform() |> extract_next_data(),
+        error = function(e) NULL
+      )
+      if (is.null(json)) next
+      pr <- jsonlite::fromJSON(json)$props$pageProps$publishedRecipe
+      if (isTRUE(pr$units == "US" && pr$serving_count == 2)) return(json)
+    }
+    NULL
+  }
+
+  fixed <- map2_chr(metric$slug, candidate_ids, \(slug, ids) {
+    json <- fetch_verified(slug, ids)
+    if (is.null(json)) return(NA_character_)
+    json
+  })
+  ok <- !is.na(fixed)
+  walk2(fixed[ok], metric$json_path[ok], writeLines)
+  if (any(!ok)) {
+    warning("Pass 4: no working US variant for: ", paste(metric$slug[!ok], collapse = ", "))
+  }
+  message("Pass 4: re-scraped ", sum(ok), " of ", nrow(metric), " metric recipes")
 }
