@@ -14,8 +14,8 @@ filtering, pantry tracking, serving scaling, multi-user.
   `recipes-full/`. See AGENTS.md for scraper details.
 - **Seed: complete.** `db/seed/recipes.jsonl` — 1224 dinner recipes matching
   the `recipes` table in `db/schema.sql` (authoritative schema).
-- **Schema: proven** via a throwaway R/Shiny prototype (deleted; see git
-  history) that exercised browse, ratings, plan, and shopping list.
+- **Schema: proven** via a throwaway prototype (deleted) that exercised
+  browse, ratings, plan, and shopping list.
 - **Stage 1 (foundation + catalog): done.** `web/` Next.js app seeded with
   1224 recipes (`npm run seed` in `web/`, DATABASE_URL in `web/.env.local`),
   browse (`/recipes`) with search + protein filter, detail
@@ -27,7 +27,14 @@ filtering, pantry tracking, serving scaling, multi-user.
   fresh), tap-to-pick toggling into `meal_plan_entries`, and a "Shop →"
   button once anything is picked. Navbar shows Plan/Shop/Cook pills; Cook
   is display-only until its stage is built.
-- **Cook stage: not started.** See Components below.
+- **Cook stage: done.** `/cook/[week]` lists the week's picks (cooked dimmed,
+  undo button, rating shown once set); `/cook/[week]/[entryId]` is a
+  mobile-first step-through: ingredients overview → one step per screen
+  (per-step amounts as chips above the step text, sticky Back/Next bar,
+  progress bar) → finish screen that sets `cooked`/`cooked_at` and prompts
+  for disliked/liked/loved (`lib/cook.ts`, actions return refreshed entries
+  like shop). Navbar Cook pill is live and `/` redirects to `/cook/<week>`
+  in the cook stage.
 - **Shop stage: done.** `/shop/[week]` lazily generates `grocery_items`
   from the week's picks (merge by (name, unit), null-quantity → pantry
   staples section, unicode-fraction display), checkbox persistence, HEB
