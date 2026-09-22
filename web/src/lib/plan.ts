@@ -117,9 +117,10 @@ async function recipesByIds(ids: number[]): Promise<RecipeSummary[]> {
   const { rows } = await pool.query<RecipeSummary>(
     `select r.id, r.slug, r.name, r.proteins, r.total_time_minutes,
             r.image_path, r.image_url, r.community_rating,
-            r.community_rating_count
+            r.community_rating_count, rt.rating as user_rating
      from recipes r
      join unnest($1::bigint[]) with ordinality u(id, ord) on u.id = r.id
+     left join ratings rt on rt.recipe_id = r.id
      order by u.ord`,
     [ids],
   );
@@ -206,10 +207,11 @@ export async function getPicks(weekStart: string): Promise<RecipeSummary[]> {
   const { rows } = await pool.query<RecipeSummary>(
     `select r.id, r.slug, r.name, r.proteins, r.total_time_minutes,
             r.image_path, r.image_url, r.community_rating,
-            r.community_rating_count
+            r.community_rating_count, rt.rating as user_rating
      from meal_plan_entries e
      join meal_plans p on p.id = e.meal_plan_id
      join recipes r on r.id = e.recipe_id
+     left join ratings rt on rt.recipe_id = r.id
      where p.week_start = $1
      order by e.id`,
     [weekStart],

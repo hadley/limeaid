@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { imageSrc } from "@/lib/images";
 import type { RecipeSummary } from "@/lib/db";
+import { RecipeCard } from "@/components/recipe-card";
 import { gotoPage, togglePick } from "./actions";
 
 type Page = { batch: RecipeSummary[]; idx: number; total: number };
@@ -81,31 +81,15 @@ export function Picker({
       <div className="grid">
         {page.batch.map((r) => {
           const selected = pickIds.has(String(r.id));
-          const src = imageSrc(r);
           return (
-            <button
+            <RecipeCard
               key={r.id}
-              className={`card card-button${selected ? " selected" : ""}`}
+              recipe={r}
               onClick={() => toggle(String(r.id))}
+              selected={selected}
               disabled={pending}
-            >
-              {src ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={src} alt="" loading="lazy" />
-              ) : (
-                <div className="card-img-placeholder" />
-              )}
-              <div className="card-body">
-                <div className="card-title">{r.name}</div>
-                <div className="muted">
-                  {r.total_time_minutes ? `${r.total_time_minutes} min` : ""}
-                  {r.community_rating
-                    ? ` · ★ ${r.community_rating.toFixed(1)}`
-                    : ""}
-                  {selected ? " · ✓ picked" : ""}
-                </div>
-              </div>
-            </button>
+              meta={selected ? "✓ picked" : undefined}
+            />
           );
         })}
       </div>

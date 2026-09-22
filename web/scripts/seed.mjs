@@ -95,6 +95,34 @@ for (const line of lines) {
 }
 await client.query("commit");
 
+// User ratings: 1-5 mealime stars mapped to disliked (2-3) / liked (4) /
+// loved (5). Matched to recipes by slug; ratings for non-dinner recipes
+// (not seeded) are skipped. Names may contain commas (quoted by write.csv),
+// so parse from the ends: slug is field 1, rating is the 5th-from-last field.
+const ratingsCsv = path.join(repoRoot, "user-ratings.csv");
+if (fs.existsSync(ratingsCsv)) {
+  const ratingMap = { 2: "disliked", 3: "disliked", 4: "liked", 5: "loved" };
+  const lines = fs.readFileSync(ratingsCsv, "utf8").split("\n").filter(Boolean);
+  await client.query("truncate ratings");
+  let loaded = 0;
+  let skipped = 0;
+  for (const line of lines.slice(1)) { // skip header
+    const m = line.match(/^([^,]*),.*,(\d+),(?:True|False),(?:yes|no),\d+,\d+\r?$/);
+    if (!m) continue;
+    const rating = ratingMap[m[2]];
+    if (!rating) continue;
+    const res = await client.query(
+      `insert into ratings (recipe_id, rating)
+       select id, $2 from recipes where slug = $1
+       on conflict (recipe_id) do update set rating = $2`,
+      [m[1], rating],
+    );
+    if (res.rowCount > 0) loaded++;
+    else skipped++;
+  }
+  console.log(`Loaded ${loaded} user ratings (${skipped} skipped, no matching seeded recipe)`);
+}
+
 const { rows } = await client.query("select count(*)::int as n from recipes");
 console.log(`Loaded ${rows[0].n} recipes`);
 await client.end();

@@ -4,15 +4,14 @@ import { DEPARTMENT_ORDER } from "./departments";
 export type CookEntry = RecipeSummary & {
   entryId: number;
   cooked: boolean;
-  rating: string | null;
 };
 
 // The week's picks with per-entry cook state and the user's rating.
 export async function getCookEntries(weekStart: string): Promise<CookEntry[]> {
   const { rows } = await pool.query<
-    RecipeSummary & { entry_id: string; cooked: boolean; rating: string | null }
+    RecipeSummary & { entry_id: string; cooked: boolean }
   >(
-    `select e.id as entry_id, e.cooked, rt.rating,
+    `select e.id as entry_id, e.cooked, rt.rating as user_rating,
             r.id, r.slug, r.name, r.proteins, r.total_time_minutes,
             r.image_path, r.image_url, r.community_rating,
             r.community_rating_count
@@ -34,9 +33,9 @@ export async function getCookEntry(
   entryId: number,
 ): Promise<(CookEntry & Recipe) | null> {
   const { rows } = await pool.query<
-    Recipe & { entry_id: string; cooked: boolean; rating: string | null }
+    Recipe & { entry_id: string; cooked: boolean }
   >(
-    `select e.id as entry_id, e.cooked, rt.rating,
+    `select e.id as entry_id, e.cooked, rt.rating as user_rating,
             r.id, r.slug, r.name, r.proteins, r.total_time_minutes,
             r.image_path, r.image_url, r.community_rating,
             r.community_rating_count, r.yield, r.source_url, r.category,

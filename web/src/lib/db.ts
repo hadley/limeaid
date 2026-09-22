@@ -35,6 +35,7 @@ export type RecipeSummary = {
   image_url: string | null;
   community_rating: number | null;
   community_rating_count: number | null;
+  user_rating: string | null;
 };
 
 export type Recipe = RecipeSummary & {

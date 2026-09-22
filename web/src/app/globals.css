@@ -80,6 +80,25 @@ body {
   flex-direction: column;
 }
 
+.card-img {
+  position: relative;
+}
+
+.card-rating-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
 .card img,
 .card-img-placeholder {
   width: 100%;

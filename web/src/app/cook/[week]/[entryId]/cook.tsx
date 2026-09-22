@@ -12,9 +12,9 @@ type Entry = CookEntry & Recipe;
 type Rating = "disliked" | "liked" | "loved";
 
 const RATINGS: { value: Rating; label: string }[] = [
-  { value: "disliked", label: "Disliked" },
-  { value: "liked", label: "Liked" },
-  { value: "loved", label: "Loved" },
+  { value: "disliked", label: "👎 Disliked" },
+  { value: "liked", label: "👍 Liked" },
+  { value: "loved", label: "❤️ Loved" },
 ];
 
 // Keep the screen awake while cooking; re-acquire when the tab becomes
@@ -64,7 +64,7 @@ export function CookMode({
   const [pos, setPos] = useState(-1);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cooked, setCooked] = useState(entry.cooked);
-  const [rating, setRating] = useState(entry.rating);
+  const [rating, setRating] = useState(entry.user_rating);
   const [pending, startTransition] = useTransition();
 
   const jump = (p: number) => {

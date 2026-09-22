@@ -1,7 +1,8 @@
 *.rds
 .Rproj.user
-recipes/
-recipes-full/
+/recipes/
+/recipes-full/
+/web/public/recipes/
 db/seed/*-batch.json
 db/seed/*.batch.json
 db/mealime.sqlite
