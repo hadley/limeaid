@@ -5,11 +5,34 @@ Dinner-only planning, grocery list feeding HEB curbside via search-URL
 handoff, React/Next.js + Postgres on Vercel, single user. The scraped corpus 
 below is the seed catalog.
 
-Scraping stage: complete. Full recipe JSON (embedded Next.js `__NEXT_DATA__`,
-2-servings US variant) saved to `recipes-full/<slug>.json` alongside images
-`recipes-full/<slug>.<jpeg|jpg>`; both gitignored. 1607/1608 recipes — the
-one failure (`stuffed-acorn-squash-apple-bacon-pine-nuts`, id 4534) has no
-working 2-servings US variant on Mealime itself (its "2 servings" link 404s).
+Scraping stage: complete. Full recipe JSON (2-servings US variant) saved to
+`recipes-full/<slug>.json` alongside images `recipes-full/<slug>.<jpeg|jpg>`;
+both gitignored. Corpus: 2,791 recipes — the COMPLETE app catalog (2,764
+recipes incl. all 793 Pro, per `mealime-catalog.json`) plus 27 website-only
+delisted extras. The website index covers only ~60% of the catalog: it
+excludes ALL Pro recipes and other unlisted ones, and the sitemap excludes
+Pro too, but Pro recipe PAGES are still live on the website (just orphaned).
+
+Full catalog: `mealime-catalog.json` = dump of the authenticated app API
+endpoint `POST https://api.mealime.com/api/v2/get_builder_data` (auth:
+`authorization: Token token=...`, body `{"source":"my-web","client_id":...}`;
+captured from the my.mealime.com "Start a New Meal Plan" flow via Chrome
+DevTools protocol on a logged-in session). Per recipe it has: variant id
+(2-servings US), recipe_id, name, slug-less identity, is_pro, ruleset
+(dinner/simple/breakfast/snack/dessert/cpg), calories, macros, sodium,
+price_per_serving, community rating + count, popularity, ingredient_names,
+presentation/thumbnail urls, and published_recipe_uuid. That uuid keys the
+app's recipe CDN: `https://cdn-recipes.mealime.com/<uuid>.json` serves the
+FULL recipe (instructions, line_items, nutrition) with NO auth — this is how
+app-only recipes (no website page at all) are scraped. Other working API
+endpoint: `POST /api/v2/get_user` (whole account: recipe_ratings keyed by
+recipe_id, favourites, history of meal plans with is_cooked flags). There is
+NO recipe-catalog REST endpoint.
+
+User data (Hadley's account, extracted 2026-09): `user-ratings.csv` (149
+ratings, slug/name/rating/is_pro/recipe_id), `user-favourites.csv` (4),
+`user-cooked-history.csv` (times-cooked per recipe, 1 unresolved variant id).
+Raw dump with auth token was in /tmp (not committed).
 
 ## Site structure
 
@@ -44,26 +67,24 @@ working 2-servings US variant on Mealime itself (its "2 servings" link 404s).
 
 ## Scripts
 
-- `scrape-recipes/scrape-index.R`: fetches all 67 index pages with
-  `httr2::req_perform_iterative(iterate_with_offset("page"), max_reqs = 67)`,
-  deduplicates by slug, writes `mealime-index.csv` (slug, id, url,
-  url_2serv_us).
-- `scrape-recipes/scrape-full-json.R`: downloads each recipe's `__NEXT_DATA__`
-  JSON to `recipes-full/<slug>.json`. Parallel via
-  `req_perform_parallel(on_error = "continue")`, throttled to 100 req/sec.
-  Pass 1 uses `url_2serv_us` (id - 1); pass 2 retries failures by following
-  the "2 servings" link on the 4-servings page; pass 3 detects saved JSONs
-  whose `serving_count != 2` (pass 2 landed 67 old recipes on 4-servings
-  metric pages) and re-scrapes them via the "US Units" link followed by the
-  "2 servings" link. Pass 4 detects saved JSONs whose
-  `publishedRecipe$units != "US"` (94 recipes: pass 2's "2 servings" link
-  can land on 2-servings METRIC pages, invisible to pass 3's serving_count
-  check) and re-scrapes the 2-servings US variant from `altVariants`
-  (`serving_count == 2 & unit_family_id == 2`), trying each candidate id
-  until one fetches and verifies (some candidate ids are dead). Resumes on
-  re-run by skipping slugs whose .json already exists.
+- Deleted: `scrape-index.R` / `scrape-full-json.R` (index-era scrapers,
+  superseded by scrape-catalog.R, which doesn't need `mealime-index.csv` —
+  it diffs the app catalog against the corpus directly, and the catalog's
+  variant ids are already the 2-servings US variant so no variant-hunting
+  passes are needed). Recoverable from git history if needed. The "Site
+  structure" section above still documents how the website variant URLs and
+  page links behave, which remains relevant to scrape-catalog.R pass 1.
+- `scrape-recipes/scrape-catalog.R`: scrapes catalog recipes missing from the
+  corpus (Pro + unlisted — invisible to the index). Pass 1 derives the slug
+  from the name (drop stopwords with/a/an/and/of, apostrophe→hyphen,
+  stringi transliteration; ~99.9% accurate) and fetches the website page,
+  verifying the embedded recipe_id. Pass 2 falls back to the recipe CDN for
+  app-only recipes and wraps it in a synthetic `__NEXT_DATA__` (category from
+  ruleset, community rating from variant_meta) so import-recipes.R consumes
+  it unchanged; caveat: CDN files' altVariants list only the 2-servings US
+  variant (no metric/4/6-serving). Resumable; idempotent.
 - `scrape-recipes/import-recipes.R`: reads `recipes-full/*.json`, filters to
-  `schemaMetadata$category == "Dinner"` (1224 of 1607), writes
+  `schemaMetadata$category == "Dinner"` (2148 of 2791), writes
   `db/seed/recipes.jsonl` matching the `recipes` table in db/schema.sql.
   Emits structured JSONB shapes: `ingredients` = [{name, quantity, unit,
   display}] (null quantity/unit = pantry staple) and `instructions` = [{text,
