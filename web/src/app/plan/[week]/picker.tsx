@@ -88,7 +88,6 @@ export function Picker({
               onClick={() => toggle(String(r.id))}
               selected={selected}
               disabled={pending}
-              meta={selected ? "✓ picked" : undefined}
             />
           );
         })}

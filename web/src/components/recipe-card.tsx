@@ -57,10 +57,9 @@ export function RecipeCard({
       <div className="card-body">
         <div className="card-title">
           {titleHref ? <Link href={titleHref}>{recipe.name}</Link> : recipe.name}
-        </div>
-        <div className="muted">
-          {recipe.total_time_minutes ? `${recipe.total_time_minutes} min` : ""}
-          {meta ? ` · ${meta}` : ""}
+          <span className="muted">
+            {recipe.total_time_minutes ? ` · ${recipe.total_time_minutes} min` : ""}
+          </span>
         </div>
         {children}
       </div>
