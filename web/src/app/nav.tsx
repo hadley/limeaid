@@ -6,14 +6,16 @@ import { setNovelty } from "./actions";
 
 const WEEK_PATH = /^\/(plan|shop|cook)\/(\d{4}-\d{2}-\d{2})/;
 
-export function WeekSelector({ weeks }: { weeks: string[] }) {
+export function WeekMenu({ weeks }: { weeks: string[] }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
   const current = pathname.match(WEEK_PATH)?.[2] ?? weeks[0];
 
-  const onChange = (week: string) => {
+  const select = (week: string) => {
     const m = pathname.match(WEEK_PATH);
     router.push(m ? `/${m[1]}/${week}` : `/plan/${week}`);
+    setOpen(false);
   };
 
   const label = (w: string) =>
@@ -24,18 +26,29 @@ export function WeekSelector({ weeks }: { weeks: string[] }) {
     });
 
   return (
-    <select
-      className="week-select"
-      value={current}
-      onChange={(e) => onChange(e.target.value)}
-      aria-label="Week"
-    >
-      {weeks.map((w) => (
-        <option key={w} value={w}>
-          Week of {label(w)}
-        </option>
-      ))}
-    </select>
+    <span className="week-menu">
+      <button
+        className="week-button"
+        onClick={() => setOpen(!open)}
+        aria-haspopup="true"
+        aria-expanded={open}
+      >
+        Week of {label(current)}
+      </button>
+      {open && (
+        <div className="dropdown">
+          {weeks.map((w) => (
+            <button
+              key={w}
+              className={`week-option${w === current ? " active" : ""}`}
+              onClick={() => select(w)}
+            >
+              Week of {label(w)}
+            </button>
+          ))}
+        </div>
+      )}
+    </span>
   );
 }
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCookEntries } from "@/lib/cook";
 import { isMonday } from "@/lib/week";
+import { StageHeader } from "@/components/stage-header";
 import { CookList } from "./list";
 
 export default async function CookWeekPage({
@@ -14,15 +15,9 @@ export default async function CookWeekPage({
 
   const entries = await getCookEntries(week);
 
-  const label = new Date(week + "T12:00:00Z").toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-
   return (
     <main className="container">
-      <h1>Week of {label}</h1>
+      <StageHeader stage="cook" week={week} />
       {entries.length === 0 ? (
         <p className="muted">
           Nothing planned this week —{" "}

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { ensurePlan, getPicks, latestPage } from "@/lib/plan";
 import { isMonday } from "@/lib/week";
 import { Filters } from "@/app/recipes/filters";
+import { StageHeader } from "@/components/stage-header";
 import { Picker } from "./picker";
 
 export default async function PlanWeekPage({
@@ -22,15 +23,9 @@ export default async function PlanWeekPage({
     getPicks(week),
   ]);
 
-  const label = new Date(week + "T12:00:00Z").toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-
   return (
     <main className="container">
-      <h1>Week of {label}</h1>
+      <StageHeader stage="plan" week={week} />
       <Suspense>
         <Filters />
       </Suspense>

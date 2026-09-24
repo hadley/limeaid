@@ -141,10 +141,6 @@ body {
   cursor: default;
 }
 
-.plan-toolbar .pagination {
-  margin: 0;
-}
-
 .hero {
   width: 100%;
   max-height: 420px;
@@ -175,39 +171,82 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-.brand {
-  font-weight: 700;
-}
-
-.pills {
+.nav-right {
+  margin-left: auto;
   display: flex;
-  gap: 0.25rem;
-  flex: 1;
+  align-items: center;
+  gap: 1rem;
 }
 
-.pill {
+.week-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.week-button {
   padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  text-decoration: none;
-  color: inherit;
   font-size: 0.9rem;
-}
-
-.pill.active {
-  background: #222;
-  color: #fff;
-}
-
-.pill.disabled {
-  color: var(--muted);
-}
-
-.week-select {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.9rem;
+  font-weight: 600;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: #fff;
+  cursor: pointer;
+}
+
+.week-menu .dropdown {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 0.25rem);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 0.25rem;
+  width: 200px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  max-height: 20rem;
+  overflow-y: auto;
+}
+
+.week-option {
+  border: none;
+  background: none;
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.week-option:hover {
+  background: #f4f4f4;
+}
+
+.week-option.active {
+  font-weight: 700;
+}
+
+.stage-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.stage-header h1 {
+  margin: 0;
+}
+
+.stage-arrow {
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 1.25rem;
+  padding: 0 0.25rem;
+}
+
+.stage-arrow:hover {
+  color: inherit;
 }
 
 .settings-menu {
@@ -253,29 +292,6 @@ body {
 
 /* plan page */
 
-.plan-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin: 0.5rem 0;
-}
-
-.plan-toolbar button {
-  padding: 0.4rem 1rem;
-  font-size: 0.95rem;
-  border: 1px solid #222;
-  border-radius: 6px;
-  background: #fff;
-  cursor: pointer;
-}
-
-.plan-toolbar label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 .picks {
   display: flex;
   gap: 0.5rem;
@@ -290,15 +306,6 @@ body {
   padding: 0.25rem 0.75rem;
   font-size: 0.85rem;
   cursor: pointer;
-}
-
-.shop-button {
-  border-radius: 999px;
-  background: #222;
-  color: #fff;
-  padding: 0.25rem 0.9rem;
-  font-size: 0.85rem;
-  text-decoration: none;
 }
 
 .card-button {

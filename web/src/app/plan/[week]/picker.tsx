@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useTransition } from "react";
 import type { RecipeSummary } from "@/lib/db";
 import { RecipeCard } from "@/components/recipe-card";
@@ -39,27 +38,6 @@ export function Picker({
 
   return (
     <>
-      <div className="plan-toolbar">
-        <p>
-          <strong>{picks.length}</strong> dinner{picks.length === 1 ? "" : "s"}{" "}
-          picked
-        </p>
-        <span className="pagination">
-          <button
-            onClick={() => goto(page.idx - 1)}
-            disabled={pending || page.idx === 0}
-          >
-            ← Prev
-          </button>
-          <span className="muted">
-            Page {page.idx + 1} of {page.total}
-          </span>
-          <button onClick={() => goto(page.idx + 1)} disabled={pending}>
-            {page.idx + 1 < page.total ? "Next →" : "More →"}
-          </button>
-        </span>
-      </div>
-
       {picks.length > 0 && (
         <div className="picks">
           {picks.map((p) => (
@@ -72,9 +50,6 @@ export function Picker({
               {p.name} ✕
             </button>
           ))}
-          <Link href={`/shop/${week}`} className="shop-button">
-            Shop →
-          </Link>
         </div>
       )}
 
@@ -92,6 +67,21 @@ export function Picker({
           );
         })}
       </div>
+
+      <span className="pagination">
+        <button
+          onClick={() => goto(page.idx - 1)}
+          disabled={pending || page.idx === 0}
+        >
+          ← Prev
+        </button>
+        <span className="muted">
+          Page {page.idx + 1} of {page.total}
+        </span>
+        <button onClick={() => goto(page.idx + 1)} disabled={pending}>
+          {page.idx + 1 < page.total ? "Next →" : "More →"}
+        </button>
+      </span>
     </>
   );
 }

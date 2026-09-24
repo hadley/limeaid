@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getPicks } from "@/lib/plan";
 import { getList } from "@/lib/shop";
 import { isMonday } from "@/lib/week";
+import { StageHeader } from "@/components/stage-header";
 import { GroceryList } from "./list";
 
 export default async function ShopWeekPage({
@@ -15,15 +16,9 @@ export default async function ShopWeekPage({
 
   const [items, picks] = await Promise.all([getList(week), getPicks(week)]);
 
-  const label = new Date(week + "T12:00:00Z").toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-
   return (
     <main className="container">
-      <h1>Week of {label}</h1>
+      <StageHeader stage="shop" week={week} />
       {picks.length === 0 && (
         <p className="muted">
           Nothing planned this week — <Link href={`/plan/${week}`}>pick some dinners</Link>.
