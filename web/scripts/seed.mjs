@@ -41,9 +41,11 @@ const deptCsv = path.join(repoRoot, "db/seed/ingredient-departments.csv");
 if (fs.existsSync(deptCsv)) {
   // Canonical names may contain commas, so parse the CSV properly (fields
   // with commas are quoted by write.csv).
+  const unquote = (f) =>
+    /^".*"$/.test(f) ? f.slice(1, -1).replace(/""/g, '"') : f;
   const parseCsvLine = (line) => {
     const m = line.match(/^"((?:[^"]|"")*)",(.*)$/) || line.match(/^([^,]*),(.*)$/);
-    return m ? [m[1].replace(/""/g, '"'), m[2]] : null;
+    return m ? [m[1].replace(/""/g, '"'), unquote(m[2])] : null;
   };
   const lines = fs.readFileSync(deptCsv, "utf8").split("\n").filter(Boolean);
   await client.query("truncate ingredient_departments");
