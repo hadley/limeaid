@@ -617,82 +617,95 @@ body {
   justify-content: space-between;
 }
 
-.cook-menu-button {
-  color: #222;
-}
-
-.cook-menu {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  overflow: hidden;
-}
-
-.cook-menu button {
-  display: block;
-  width: 100%;
-  border: none;
-  border-bottom: 1px solid #eee;
-  background: #fff;
-  padding: 0.6rem 0.9rem;
-  font-size: 0.95rem;
-  text-align: left;
-  cursor: pointer;
-  /* One-line preview of each step. */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cook-menu button:last-child {
-  border-bottom: none;
-}
-
-.cook-menu button.current {
-  font-weight: 700;
-}
-
-.cook-menu-steps {
+/* Step circles: always one line. Each button is a flexible tap target that
+   shrinks as needed; the visible dot is drawn by ::before. */
+.cook-steps {
   display: flex;
-  flex-wrap: wrap;
-  border-bottom: 1px solid #eee;
+  flex-wrap: nowrap;
+  margin: 0.25rem 0 1rem;
 }
 
-.cook-menu-steps button {
-  width: auto;
-  flex: 1 0 2.5rem;
-  border-bottom: none;
-  border-right: 1px solid #eee;
-  text-align: center;
-  padding: 0.6rem 0.25rem;
+.cook-steps button {
+  --dot: #999;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 1.6rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
-.cook-progress {
-  height: 4px;
-  background: #eee;
-  border-radius: 2px;
-  margin: 0.5rem 0 1rem;
+.cook-steps button::before {
+  content: "";
+  width: 0.65rem;
+  height: 0.65rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--dot);
+  box-sizing: border-box;
 }
 
-.cook-progress > div {
-  height: 100%;
-  background: #222;
-  border-radius: 2px;
-  transition: width 0.2s;
+.cook-steps button.ingredients {
+  --dot: #d08a1a;
+}
+
+.cook-steps button.finish {
+  --dot: #2e8b57;
+}
+
+.cook-steps button.done::before {
+  background: var(--dot);
+}
+
+.cook-steps button.current::before {
+  background: var(--dot);
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #222;
+}
+
+.cook-steps button:not(.ingredients):not(.finish).current {
+  --dot: #222;
+}
+
+/* Ingredients flow into two columns (single column on very narrow screens)
+   so the whole list fits one screen. Groups may split across columns. */
+.cook-ingredient-groups {
+  columns: 2;
+  column-gap: 1.25rem;
+}
+
+@media (max-width: 380px) {
+  .cook-ingredient-groups {
+    columns: 1;
+  }
 }
 
 .cook-ingredients {
   font-size: 1.1rem;
-  line-height: 1.9;
-  padding-left: 1.25rem;
+  line-height: 1.35;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+}
+
+.cook-ingredients li {
+  margin-bottom: 0.3rem;
 }
 
 h3.cook-location {
-  margin: 1.25rem 0 0.25rem;
-  font-size: 0.95rem;
+  margin: 0 0 0.4rem;
+  padding: 0.2rem 0.5rem;
+  border-left: 3px solid #d08a1a;
+  background: #faf3e8;
+  font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--muted, #666);
+  color: #444;
+  break-after: avoid;
 }
 
 .cook-amounts {

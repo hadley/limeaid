@@ -59,8 +59,8 @@ function useWakeLock() {
 // Step-through cooking flow: a single ingredients page first (gather
 // everything, grouped by kitchen location), then one instruction per
 // screen — step text first, its per-step amounts as chips below — then a
-// finish screen that marks the meal cooked and prompts for a rating. A
-// hamburger menu jumps to any screen directly.
+// finish screen that marks the meal cooked and prompts for a rating. A row
+// of step circles at the top shows progress and jumps to any screen.
 export function CookMode({
   week,
   initialEntry,
@@ -75,21 +75,22 @@ export function CookMode({
   const FINISH = steps.length;
   // -1 = ingredients, 0..n-1 = steps, n = finish
   const [pos, setPos] = useState(-1);
-  const [menuOpen, setMenuOpen] = useState(false);
+  // Furthest screen reached; everything before it counts as completed.
+  const [maxPos, setMaxPos] = useState(-1);
   const [cooked, setCooked] = useState(entry.cooked);
   const [rating, setRating] = useState(entry.user_rating);
   const [pending, startTransition] = useTransition();
 
   const jump = (p: number) => {
     setPos(p);
-    setMenuOpen(false);
+    setMaxPos((m) => Math.max(m, p));
   };
 
   const finish = () =>
     startTransition(async () => {
       await toggleCooked(week, entry.entryId, true);
       setCooked(true);
-      setPos(FINISH);
+      jump(FINISH);
     });
 
   const pick = (value: Rating) =>
@@ -105,25 +106,24 @@ export function CookMode({
       <>
         <h2>Ingredients</h2>
         <p className="muted">Get everything out before you start.</p>
-        {groupByLocation(entry.ingredients).map(([location, items]) => (
-          <section key={location ?? "other"}>
-            {location && <h3 className="cook-location">{location}</h3>}
-            <ul className="cook-ingredients">
-              {items.map((i) => (
-                <li key={i.display}>{i.display}</li>
-              ))}
-            </ul>
-          </section>
-        ))}
+        <div className="cook-ingredient-groups">
+          {groupByLocation(entry.ingredients).map(([location, items]) => (
+            <section key={location ?? "other"}>
+              {location && <h3 className="cook-location">{location}</h3>}
+              <ul className="cook-ingredients">
+                {items.map((i) => (
+                  <li key={i.display}>{i.display}</li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
       </>
     );
   } else if (pos < FINISH) {
     const s = steps[pos];
     body = (
       <>
-        <p className="muted">
-          Step {pos + 1} of {steps.length}
-        </p>
         <p className="cook-step">{s.text}</p>
         {s.amounts && s.amounts.length > 0 && (
           <ul className="cook-amounts">
@@ -162,55 +162,39 @@ export function CookMode({
     );
   }
 
+  const circleState = (p: number) =>
+    [p === pos ? "current" : "", cooked || p < maxPos ? "done" : ""].join(" ");
+
   return (
     <div className="cook-mode">
       <div className="plan-toolbar cook-toolbar">
         <Link href={`/cook/${week}`} className="muted">
           ← {entry.name}
         </Link>
+      </div>
+      <nav className="cook-steps" aria-label="Steps">
         <button
-          className="icon-button cook-menu-button"
-          aria-label="Jump to any step"
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
-        </button>
-      </div>
-      {menuOpen && (
-        <div className="cook-menu">
+          className={`ingredients ${circleState(-1)}`}
+          aria-label="Ingredients"
+          aria-current={pos === -1 ? "step" : undefined}
+          onClick={() => jump(-1)}
+        />
+        {steps.map((_, i) => (
           <button
-            className={pos === -1 ? "current" : ""}
-            onClick={() => jump(-1)}
-          >
-            Ingredients
-          </button>
-          <div className="cook-menu-steps">
-            {steps.map((_, i) => (
-              <button
-                key={i}
-                className={pos === i ? "current" : ""}
-                onClick={() => jump(i)}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
-          <button
-            className={pos === FINISH ? "current" : ""}
-            onClick={() => jump(FINISH)}
-          >
-            Finish & rate
-          </button>
-        </div>
-      )}
-      <div className="cook-progress">
-        <div style={{ width: `${((pos + 1) / (FINISH + 1)) * 100}%` }} />
-      </div>
+            key={i}
+            className={circleState(i)}
+            aria-label={`Step ${i + 1}`}
+            aria-current={pos === i ? "step" : undefined}
+            onClick={() => jump(i)}
+          />
+        ))}
+        <button
+          className={`finish ${circleState(FINISH)}`}
+          aria-label="Done and rate"
+          aria-current={pos === FINISH ? "step" : undefined}
+          onClick={() => jump(FINISH)}
+        />
+      </nav>
 
       {body}
 
