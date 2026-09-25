@@ -24,7 +24,7 @@ export default async function PlanWeekPage({
   ]);
 
   return (
-    <main className="container">
+    <main className="container wide">
       <StageHeader stage="plan" week={week} />
       <Suspense>
         <Filters />

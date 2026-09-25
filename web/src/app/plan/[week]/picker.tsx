@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import type { RecipeSummary } from "@/lib/db";
 import { RecipeCard } from "@/components/recipe-card";
+import { PicksPanel } from "@/components/picks-panel";
 import { gotoPage, togglePick } from "./actions";
 
 type Page = { batch: RecipeSummary[]; idx: number; total: number };
@@ -37,51 +38,40 @@ export function Picker({
     });
 
   return (
-    <>
-      {picks.length > 0 && (
-        <div className="picks">
-          {picks.map((p) => (
-            <button
-              key={p.id}
-              className="pick-chip"
-              title="Remove from plan"
-              onClick={() => toggle(String(p.id))}
-            >
-              {p.name} ✕
-            </button>
-          ))}
+    <div className="plan-layout">
+      <div className="plan-main">
+        <div className="grid">
+          {page.batch.map((r) => {
+            const selected = pickIds.has(String(r.id));
+            return (
+              <RecipeCard
+                key={r.id}
+                recipe={r}
+                onClick={() => toggle(String(r.id))}
+                selected={selected}
+                disabled={pending}
+              />
+            );
+          })}
         </div>
-      )}
 
-      <div className="grid">
-        {page.batch.map((r) => {
-          const selected = pickIds.has(String(r.id));
-          return (
-            <RecipeCard
-              key={r.id}
-              recipe={r}
-              onClick={() => toggle(String(r.id))}
-              selected={selected}
-              disabled={pending}
-            />
-          );
-        })}
+        <span className="pagination">
+          <button
+            onClick={() => goto(page.idx - 1)}
+            disabled={pending || page.idx === 0}
+          >
+            ← Prev
+          </button>
+          <span className="muted">
+            Page {page.idx + 1} of {page.total}
+          </span>
+          <button onClick={() => goto(page.idx + 1)} disabled={pending}>
+            {page.idx + 1 < page.total ? "Next →" : "More →"}
+          </button>
+        </span>
       </div>
 
-      <span className="pagination">
-        <button
-          onClick={() => goto(page.idx - 1)}
-          disabled={pending || page.idx === 0}
-        >
-          ← Prev
-        </button>
-        <span className="muted">
-          Page {page.idx + 1} of {page.total}
-        </span>
-        <button onClick={() => goto(page.idx + 1)} disabled={pending}>
-          {page.idx + 1 < page.total ? "Next →" : "More →"}
-        </button>
-      </span>
-    </>
+      <PicksPanel week={week} picks={picks} onRemove={toggle} />
+    </div>
   );
 }

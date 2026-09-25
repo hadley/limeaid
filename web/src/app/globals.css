@@ -292,20 +292,216 @@ body {
 
 /* plan page */
 
-.picks {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin: 0.5rem 0 1rem;
+.container.wide {
+  max-width: 1240px;
 }
 
-.pick-chip {
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: #f6f6f6;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.85rem;
+/* leave room for the fixed picks bar on mobile */
+.plan-layout {
+  padding-bottom: 5rem;
+}
+
+.plan-main {
+  min-width: 0;
+}
+
+.picks-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  height: 4.25rem;
+  padding: 0 0.75rem calc(env(safe-area-inset-bottom) / 2);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #fff;
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.picks-open {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  background: none;
+  border: 0;
+  padding: 0;
   cursor: pointer;
+}
+
+.picks-empty {
+  flex: 1;
+}
+
+.picks-stack {
+  display: flex;
+}
+
+.picks-stack img,
+.picks-stack .picks-thumb-placeholder,
+.picks-more {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  margin-left: -0.75rem;
+  background: #eee;
+}
+
+.picks-stack > :first-child {
+  margin-left: 0;
+}
+
+.picks-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.picks-shop {
+  background: #222;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 999px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.picks-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.picks-panel.open .picks-backdrop {
+  display: block;
+}
+
+.picks-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 21;
+  max-height: 65vh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  padding: 0 1rem env(safe-area-inset-bottom);
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+}
+
+.picks-panel.open .picks-sheet {
+  transform: translateY(0);
+}
+
+.picks-grab {
+  width: 2.5rem;
+  height: 4px;
+  border-radius: 2px;
+  background: #ccc;
+  margin: 0.5rem auto 0.75rem;
+  cursor: pointer;
+}
+
+.picks-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.picks-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.picks-proteins {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.picks-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 1rem;
+  overflow-y: auto;
+}
+
+.picks-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9rem;
+}
+
+.picks-list img,
+.picks-list .picks-thumb-placeholder {
+  width: 3rem;
+  height: 3rem;
+  flex: none;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #eee;
+}
+
+.picks-name {
+  flex: 1;
+}
+
+.picks-remove {
+  background: none;
+  border: 0;
+  font-size: 1.1rem;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+}
+
+/* wide screens: the sheet becomes a permanent sticky sidebar */
+@media (min-width: 900px) {
+  .plan-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 1.5rem;
+    align-items: start;
+    padding-bottom: 0;
+  }
+
+  .picks-bar,
+  .picks-backdrop,
+  .picks-panel.open .picks-backdrop,
+  .picks-grab {
+    display: none;
+  }
+
+  .picks-sheet {
+    position: sticky;
+    top: 1rem;
+    margin-top: 1rem;
+    max-height: calc(100vh - 2rem);
+    transform: none;
+    transition: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem 0;
+  }
 }
 
 .card-button {
@@ -320,6 +516,26 @@ body {
 .card-button.selected {
   border-color: #222;
   outline: 2px solid #222;
+}
+
+.card-button.selected img {
+  opacity: 0.75;
+}
+
+.card-button.selected .card-img::after {
+  content: "✓";
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: #222;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
 }
 
 /* grocery list */

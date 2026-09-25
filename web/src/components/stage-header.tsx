@@ -30,15 +30,6 @@ export function StageHeader({ stage, week }: { stage: Stage; week: string }) {
         </Link>
       )}
       <h1>{TITLES[stage]}</h1>
-      {stage === "plan" && (
-        <Link
-          href={`/shop/${week}`}
-          className="stage-arrow"
-          aria-label="Forward to shop"
-        >
-          →
-        </Link>
-      )}
       {stage === "shop" && (
         <Link
           href={`/cook/${week}`}
