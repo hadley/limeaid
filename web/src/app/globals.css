@@ -608,9 +608,63 @@ body {
   max-width: 640px;
 }
 
-.cook-mode {
-  /* Room for the fixed bottom nav bar. */
-  padding-bottom: 5.5rem;
+/* Scroll snapping on the document while cook mode is mounted; the
+   component sets scroll-padding-top to the sticky header height. */
+html.cook-snap {
+  scroll-snap-type: y mandatory;
+}
+
+.cook-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+
+.cook-section {
+  scroll-snap-align: start;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid #eee;
+  opacity: 0.35;
+  transition: opacity 0.2s;
+  cursor: pointer;
+}
+
+.cook-section.next {
+  opacity: 0.7;
+}
+
+.cook-section.current {
+  opacity: 1;
+  cursor: auto;
+}
+
+.cook-section > :first-child {
+  margin-top: 0;
+}
+
+/* Tall enough that the last section can snap to the top of the screen. */
+.cook-finish {
+  min-height: 100svh;
+  border-bottom: none;
+}
+
+.cook-finish-button {
+  width: 100%;
+  padding: 1.1rem 1rem;
+  font-size: 1.15rem;
+  border: 1px solid #222;
+  border-radius: 8px;
+  background: #222;
+  color: #fff;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+.cook-finish-button:disabled {
+  background: var(--border);
+  border-color: var(--border);
 }
 
 .cook-toolbar {
@@ -622,11 +676,10 @@ body {
 .cook-steps {
   display: flex;
   flex-wrap: nowrap;
-  margin: 0.25rem 0 1rem;
+  margin: 0.25rem 0 0.5rem;
 }
 
 .cook-steps button {
-  --dot: #999;
   flex: 1 1 0;
   min-width: 0;
   max-width: 1.6rem;
@@ -646,8 +699,17 @@ body {
   height: 0.65rem;
   flex-shrink: 0;
   border-radius: 50%;
-  border: 1.5px solid var(--dot);
-  box-sizing: border-box;
+  background: var(--dot);
+  opacity: 0.25;
+  transition: opacity 0.2s;
+}
+
+.cook-steps button.done::before {
+  opacity: 1;
+}
+
+.cook-steps button {
+  --dot: #333;
 }
 
 .cook-steps button.ingredients {
@@ -656,19 +718,6 @@ body {
 
 .cook-steps button.finish {
   --dot: #2e8b57;
-}
-
-.cook-steps button.done::before {
-  background: var(--dot);
-}
-
-.cook-steps button.current::before {
-  background: var(--dot);
-  box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #222;
-}
-
-.cook-steps button:not(.ingredients):not(.finish).current {
-  --dot: #222;
 }
 
 /* Ingredients flow into two columns (single column on very narrow screens)
@@ -748,42 +797,4 @@ h3.cook-location {
 .cook-rating button.selected {
   background: #222;
   color: #fff;
-}
-
-.cook-nav {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
-  background: #fff;
-  border-top: 1px solid var(--border);
-}
-
-.cook-nav button {
-  flex: 1 1 50%;
-  padding: 1.1rem 1rem;
-  font-size: 1.15rem;
-  border: 1px solid #222;
-  border-radius: 8px;
-  background: #fff;
-  cursor: pointer;
-}
-
-.cook-nav button.primary {
-  background: #222;
-  color: #fff;
-}
-
-.cook-nav button:disabled {
-  border-color: var(--border);
-  color: var(--muted);
-  cursor: default;
-}
-
-.cook-nav button.primary:disabled {
-  background: var(--border);
-  border-color: var(--border);
 }
