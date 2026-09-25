@@ -1,5 +1,6 @@
 "use server";
 
+import type { Rating } from "@/lib/ratings";
 import { getCookEntries, setCooked, setRating, type CookEntry } from "@/lib/cook";
 
 export async function toggleCooked(
@@ -14,7 +15,7 @@ export async function toggleCooked(
 export async function rate(
   weekStart: string,
   recipeId: number,
-  rating: "disliked" | "liked" | "loved" | null,
+  rating: Rating | null,
 ): Promise<CookEntry[]> {
   await setRating(recipeId, rating);
   return getCookEntries(weekStart);

@@ -3,15 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import type { CookRecipe, IngredientGroup } from "@/lib/cook";
+import { type Rating, RATINGS, ratingLabel } from "@/lib/ratings";
 import { rate, toggleCooked } from "../actions";
-
-type Rating = "disliked" | "liked" | "loved";
-
-const RATINGS: { value: Rating; label: string }[] = [
-  { value: "disliked", label: "👎 Disliked" },
-  { value: "liked", label: "👍 Liked" },
-  { value: "loved", label: "❤️ Loved" },
-];
 
 // Keep the screen awake while cooking; re-acquire when the tab becomes
 // visible again (the lock drops on backgrounding).
@@ -187,12 +180,12 @@ function FinishSection({ week, entry }: { week: string; entry: CookRecipe }) {
           <div className="cook-rating">
             {RATINGS.map((r) => (
               <button
-                key={r.value}
+                key={r}
                 disabled={pending}
-                className={rating === r.value ? "selected" : ""}
-                onClick={() => pick(r.value)}
+                className={rating === r ? "selected" : ""}
+                onClick={() => pick(r)}
               >
-                {r.label}
+                {ratingLabel(r)}
               </button>
             ))}
           </div>

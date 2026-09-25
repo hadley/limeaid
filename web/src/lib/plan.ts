@@ -1,4 +1,5 @@
 import { pool, type RecipeSummary } from "./db";
+import type { Rating } from "./ratings";
 import { mondayOf } from "./week";
 
 const TAU = 0.3; // softmax temperature
@@ -25,7 +26,7 @@ export async function getNovelty(): Promise<number> {
 
 type Candidate = {
   id: number;
-  rating: string | null;
+  rating: Rating | null;
   last_cooked: string | null;
   bucket: string;
 };
@@ -35,7 +36,7 @@ type Candidate = {
 async function candidates(q = "", protein = ""): Promise<Candidate[]> {
   const { rows } = await pool.query<{
     id: string;
-    rating: string | null;
+    rating: Rating | null;
     last_cooked: Date | null;
     proteins: string[];
   }>(

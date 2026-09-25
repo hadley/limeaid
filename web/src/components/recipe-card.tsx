@@ -5,12 +5,7 @@ import type { ReactNode } from "react";
 // bundled into client components that render this card.
 import { imageSrc } from "@/lib/images";
 import type { RecipeSummary } from "@/lib/db";
-
-export const RATING_EMOJI: Record<string, string> = {
-  disliked: "👎",
-  liked: "👍",
-  loved: "❤️",
-};
+import { RATING_EMOJI } from "@/lib/ratings";
 
 // Shared recipe card: image with rating badge overlay, title, and a muted
 // meta line (cook time + optional extra). Wrapper depends on props: a Link

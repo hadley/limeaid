@@ -1,5 +1,6 @@
 import { pool, type Ingredient, type Recipe, type RecipeSummary } from "./db";
 import { LOCATION_ORDER } from "./locations";
+import type { Rating } from "./ratings";
 
 // Ingredients sharing a kitchen location. `location` is null for the final
 // group of ingredients with no known location.
@@ -100,7 +101,7 @@ export async function setCooked(
 
 export async function setRating(
   recipeId: number,
-  rating: "disliked" | "liked" | "loved" | null,
+  rating: Rating | null,
 ): Promise<void> {
   if (rating === null) {
     await pool.query("delete from ratings where recipe_id = $1", [recipeId]);

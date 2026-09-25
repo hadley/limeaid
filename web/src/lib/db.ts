@@ -1,4 +1,5 @@
 import { Pool } from "pg";
+import type { Rating } from "./ratings";
 
 const globalForPg = globalThis as unknown as { pool?: Pool };
 
@@ -35,7 +36,7 @@ export type RecipeSummary = {
   image_url: string | null;
   community_rating: number | null;
   community_rating_count: number | null;
-  user_rating: string | null;
+  user_rating: Rating | null;
 };
 
 export type Recipe = RecipeSummary & {

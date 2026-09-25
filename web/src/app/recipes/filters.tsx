@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ratingLabel } from "@/lib/ratings";
 import { useEffect, useState } from "react";
 
 const PROTEINS = [
@@ -62,8 +63,11 @@ export function Filters() {
         onChange={(e) => navigate(q, protein, e.target.value)}
       >
         <option value="">All ratings</option>
-        <option value="loved">❤️ Loved</option>
-        <option value="liked">👍 Liked</option>
+        {(["loved", "liked"] as const).map((r) => (
+          <option key={r} value={r}>
+            {ratingLabel(r)}
+          </option>
+        ))}
         <option value="unrated">Unrated</option>
       </select>
     </div>

@@ -14,9 +14,7 @@ export default async function RecipesPage({
   const { q = "", protein = "", rating = "", page = "1" } = await searchParams;
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
 
-  const { rows } = await pool.query<
-    RecipeSummary & { total: string; user_rating: string | null }
-  >(
+  const { rows } = await pool.query<RecipeSummary & { total: string }>(
     `with filtered as (
        select recipes.id, slug, name, proteins, total_time_minutes, image_path,
               image_url, r.rating as user_rating
