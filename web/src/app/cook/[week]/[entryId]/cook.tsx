@@ -2,24 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
-import type { CookEntry, LocatedIngredient } from "@/lib/cook";
-import type { Recipe } from "@/lib/db";
-import { LOCATION_ORDER } from "@/lib/locations";
+import type { CookRecipe, IngredientGroup } from "@/lib/cook";
 import { rate, toggleCooked } from "../actions";
-
-type Entry = CookEntry &
-  Omit<Recipe, "ingredients"> & { ingredients: LocatedIngredient[] };
-
-// Group ingredients by kitchen location, in display order; ingredients with
-// no classification go in an unlabeled final group.
-function groupByLocation(ingredients: LocatedIngredient[]) {
-  const groups = new Map<string | null, LocatedIngredient[]>();
-  for (const i of ingredients) {
-    const key = LOCATION_ORDER.includes(i.location ?? "") ? i.location : null;
-    groups.set(key, [...(groups.get(key) ?? []), i]);
-  }
-  return [...groups.entries()];
-}
 
 type Rating = "disliked" | "liked" | "loved";
 
@@ -117,7 +101,7 @@ function useSnapSections() {
   };
 }
 
-type Step = Entry["instructions"][number];
+type Step = CookRecipe["instructions"][number];
 
 // Everything on the page, in order: the ingredients, each instruction, then
 // the finish section. Indexes into this list are the only notion of
@@ -139,16 +123,12 @@ function buildSections(steps: Step[]): Section[] {
   ];
 }
 
-function IngredientsList({
-  ingredients,
-}: {
-  ingredients: LocatedIngredient[];
-}) {
+function IngredientsList({ groups }: { groups: IngredientGroup[] }) {
   return (
     <>
       <h2>Ingredients</h2>
       <div className="cook-ingredient-groups">
-        {groupByLocation(ingredients).map(([location, items]) => (
+        {groups.map(({ location, items }) => (
           <div key={location ?? "other"}>
             {location && <h3 className="cook-location">{location}</h3>}
             <ul className="cook-ingredients">
@@ -180,7 +160,7 @@ function StepContent({ step }: { step: Step }) {
 
 // Marks the meal cooked, then offers a rating (tap the selected rating
 // again to clear it).
-function FinishSection({ week, entry }: { week: string; entry: Entry }) {
+function FinishSection({ week, entry }: { week: string; entry: CookRecipe }) {
   const [cooked, setCooked] = useState(entry.cooked);
   const [rating, setRating] = useState(entry.user_rating);
   const [pending, startTransition] = useTransition();
@@ -238,7 +218,7 @@ function FinishSection({ week, entry }: { week: string; entry: Entry }) {
 // Non-current sections are dimmed (the next one less so) and tapping one
 // jumps to it. The header's dots show position: dark up to the current
 // section, light after; tapping a dot jumps to its section.
-export function CookMode({ week, entry }: { week: string; entry: Entry }) {
+export function CookMode({ week, entry }: { week: string; entry: CookRecipe }) {
   useWakeLock();
   const sections = buildSections(entry.instructions);
   const { current, headerRef, sectionRef, scrollTo } = useSnapSections();
@@ -275,7 +255,7 @@ export function CookMode({ week, entry }: { week: string; entry: Entry }) {
           onClick={i === current ? undefined : () => scrollTo(i)}
         >
           {s.kind === "ingredients" ? (
-            <IngredientsList ingredients={entry.ingredients} />
+            <IngredientsList groups={entry.ingredientGroups} />
           ) : s.kind === "step" ? (
             <StepContent step={s.step} />
           ) : (

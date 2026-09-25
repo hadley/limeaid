@@ -1,7 +1,13 @@
 import { pool, type Ingredient, type Recipe, type RecipeSummary } from "./db";
 import { LOCATION_ORDER } from "./locations";
 
-export type LocatedIngredient = Ingredient & { location: string | null };
+// Ingredients sharing a kitchen location. `location` is null for the final
+// group of ingredients with no known location.
+export type IngredientGroup = { location: string | null; items: Ingredient[] };
+
+// One entry with its full recipe, ingredients grouped for the cook view.
+export type CookRecipe = CookEntry &
+  Omit<Recipe, "ingredients"> & { ingredientGroups: IngredientGroup[] };
 
 export type CookEntry = RecipeSummary & {
   entryId: number;
@@ -25,7 +31,10 @@ export async function getCookEntries(weekStart: string): Promise<CookEntry[]> {
      order by e.id`,
     [weekStart],
   );
-  return rows.map(({ entry_id, ...r }) => ({ ...r, entryId: Number(entry_id) }));
+  return rows.map(({ entry_id, ...r }) => ({
+    ...r,
+    entryId: Number(entry_id),
+  }));
 }
 
 // One entry with the full recipe, for the step-through cooking view.
@@ -33,9 +42,7 @@ export async function getCookEntries(weekStart: string): Promise<CookEntry[]> {
 export async function getCookEntry(
   weekStart: string,
   entryId: number,
-): Promise<(CookEntry & Omit<Recipe, "ingredients"> & {
-  ingredients: LocatedIngredient[];
-}) | null> {
+): Promise<CookRecipe | null> {
   const { rows } = await pool.query<
     Recipe & { entry_id: string; cooked: boolean }
   >(
@@ -54,33 +61,35 @@ export async function getCookEntry(
   if (rows.length === 0) return null;
   const { entry_id, ...r } = rows[0];
 
-  // Tag each ingredient with its kitchen location (Fridge, Pantry, …) so
-  // the "get everything out" screen can group by where things live.
-  // Unknown locations go last.
-  const names = r.ingredients.map((i) => i.name);
+  // Group ingredients by kitchen location (Fridge, Pantry, …) in
+  // LOCATION_ORDER, alphabetical within a group, so the ingredients section
+  // can show where things live. Unknown locations form a final group.
+  const { ingredients, ...recipe } = r;
   const { rows: locRows } = await pool.query<{
     name: string;
     location: string;
   }>("select name, location from ingredient_locations where name = any($1)", [
-    names,
+    ingredients.map((i) => i.name),
   ]);
   const locOf = new Map(locRows.map((l) => [l.name, l.location]));
-  const locRank = (location: string | null) => {
-    const idx = LOCATION_ORDER.indexOf(location ?? "");
-    return idx === -1 ? LOCATION_ORDER.length : idx;
-  };
-  const ingredients: LocatedIngredient[] = r.ingredients
-    .map((i) => ({ ...i, location: locOf.get(i.name) ?? null }))
-    .sort(
-      (a, b) =>
-        locRank(a.location) - locRank(b.location) ||
-        a.name.localeCompare(b.name),
-    );
+  const byLocation = new Map<string | null, Ingredient[]>();
+  const sorted = [...ingredients].sort((a, b) => a.name.localeCompare(b.name));
+  for (const i of sorted) {
+    const loc = locOf.get(i.name) ?? null;
+    const key = loc !== null && LOCATION_ORDER.includes(loc) ? loc : null;
+    byLocation.set(key, [...(byLocation.get(key) ?? []), i]);
+  }
+  const ingredientGroups = [...LOCATION_ORDER, null]
+    .filter((location) => byLocation.has(location))
+    .map((location) => ({ location, items: byLocation.get(location)! }));
 
-  return { ...r, ingredients, entryId: Number(entry_id) };
+  return { ...recipe, ingredientGroups, entryId: Number(entry_id) };
 }
 
-export async function setCooked(entryId: number, cooked: boolean): Promise<void> {
+export async function setCooked(
+  entryId: number,
+  cooked: boolean,
+): Promise<void> {
   await pool.query(
     `update meal_plan_entries
      set cooked = $2, cooked_at = case when $2 then now() else null end
