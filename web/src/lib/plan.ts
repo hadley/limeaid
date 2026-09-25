@@ -156,7 +156,7 @@ export async function showPage(
     // Draw a fresh page.
     const novelty = await getNovelty();
     const now = Date.now();
-    let shown = pages.flat();
+    const shown = pages.flat();
     let available = (await candidates(q, protein)).filter(
       (c) => !shown.includes(c.id),
     );

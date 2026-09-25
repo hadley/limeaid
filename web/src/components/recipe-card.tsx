@@ -8,7 +8,7 @@ import type { RecipeSummary } from "@/lib/db";
 import { RATING_EMOJI } from "@/lib/ratings";
 
 // Shared recipe card: image with rating badge overlay, title, and a muted
-// meta line (cook time + optional extra). Wrapper depends on props: a Link
+// cook time. Wrapper depends on props: a Link
 // when `href` is set, a button when `onClick` is set, otherwise a plain div
 // (use `titleHref` and `children` to compose interactive content inside).
 export function RecipeCard({
@@ -19,7 +19,6 @@ export function RecipeCard({
   disabled,
   cooked,
   titleHref,
-  meta,
   children,
 }: {
   recipe: RecipeSummary;
@@ -29,7 +28,6 @@ export function RecipeCard({
   disabled?: boolean;
   cooked?: boolean;
   titleHref?: string;
-  meta?: string;
   children?: ReactNode;
 }) {
   const src = imageSrc(recipe);
