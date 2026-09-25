@@ -645,7 +645,7 @@ html.cook-snap {
 }
 
 /* Tall enough that the last section can snap to the top of the screen. */
-.cook-finish {
+.cook-section-finish {
   min-height: 100svh;
   border-bottom: none;
 }

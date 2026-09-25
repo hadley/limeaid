@@ -16,7 +16,7 @@ export default async function CookEntryPage({
 
   return (
     <main className="container cook">
-      <CookMode week={week} initialEntry={JSON.parse(JSON.stringify(entry))} />
+      <CookMode week={week} entry={JSON.parse(JSON.stringify(entry))} />
     </main>
   );
 }

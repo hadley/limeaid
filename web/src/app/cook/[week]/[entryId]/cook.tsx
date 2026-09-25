@@ -1,13 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  type ReactNode,
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import type { CookEntry, LocatedIngredient } from "@/lib/cook";
 import type { Recipe } from "@/lib/db";
 import { LOCATION_ORDER } from "@/lib/locations";
@@ -61,34 +55,23 @@ function useWakeLock() {
   }, []);
 }
 
-// Scrolling cooking flow: ingredients (grouped by kitchen location), then
-// every instruction, then a finish section that marks the meal cooked and
-// prompts for a rating — all on one page. Scroll snapping lands each
-// section exactly under the sticky header; the non-current sections are
-// dimmed. A row of dots in the header tracks progress and jumps to any
-// section; tapping a dimmed section also jumps to it.
-export function CookMode({
-  week,
-  initialEntry,
-}: {
-  week: string;
-  initialEntry: Entry;
-}) {
-  useWakeLock();
-  const entry = initialEntry;
-  const steps = entry.instructions;
-  const FINISH = steps.length;
-  // -1 = ingredients, 0..n-1 = steps, n = finish
-  const [pos, setPos] = useState(-1);
-  const [cooked, setCooked] = useState(entry.cooked);
-  const [rating, setRating] = useState(entry.user_rating);
-  const [pending, startTransition] = useTransition();
-  const headerRef = useRef<HTMLDivElement>(null);
-  const sectionRefs = useRef<(HTMLElement | null)[]>([]);
+// How far below the header a section's top may sit and still count as the
+// current one (absorbs snap rounding and small scroll offsets).
+const CURRENT_SLOP_PX = 40;
+// Tolerance when detecting that the page is scrolled to the very bottom.
+const BOTTOM_SLOP_PX = 2;
 
-  // Enable document-level snapping while cook mode is mounted, keep the
-  // snap offset in sync with the sticky header height, and derive the
-  // current section from scroll position.
+// Document-level scroll snapping for a stack of sections under a sticky
+// header. While mounted: snapping is enabled on <html>, the snap offset
+// tracks the header's height, and `current` is the index of the section
+// sitting under the header (the last one once scrolled to the bottom, since
+// it may be too short to reach the top). Attach `headerRef` to the header
+// and `sectionRef(i)` to section i; `scrollTo(i)` smooth-scrolls to it.
+function useSnapSections() {
+  const [current, setCurrent] = useState(0);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const sections = useRef<(HTMLElement | null)[]>([]);
+
   useEffect(() => {
     const html = document.documentElement;
     html.classList.add("cook-snap");
@@ -97,16 +80,16 @@ export function CookMode({
       frame = 0;
       const header = headerRef.current?.offsetHeight ?? 0;
       html.style.scrollPaddingTop = `${header}px`;
-      const sections = sectionRefs.current;
-      let current = 0;
-      sections.forEach((el, i) => {
-        if (el && el.getBoundingClientRect().top <= header + 40) current = i;
+      const els = sections.current;
+      const atBottom =
+        window.innerHeight + window.scrollY >=
+        html.scrollHeight - BOTTOM_SLOP_PX;
+      let next = 0;
+      els.forEach((el, i) => {
+        if (el && el.getBoundingClientRect().top <= header + CURRENT_SLOP_PX)
+          next = i;
       });
-      // At the very bottom the finish section may not reach the top.
-      if (window.innerHeight + window.scrollY >= html.scrollHeight - 2) {
-        current = sections.length - 1;
-      }
-      setPos(current - 1);
+      setCurrent(atBottom ? els.length - 1 : next);
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(update);
@@ -123,8 +106,84 @@ export function CookMode({
     };
   }, []);
 
-  const jump = (p: number) =>
-    sectionRefs.current[p + 1]?.scrollIntoView({ behavior: "smooth" });
+  return {
+    current,
+    headerRef,
+    sectionRef: (i: number) => (el: HTMLElement | null) => {
+      sections.current[i] = el;
+    },
+    scrollTo: (i: number) =>
+      sections.current[i]?.scrollIntoView({ behavior: "smooth" }),
+  };
+}
+
+type Step = Entry["instructions"][number];
+
+// Everything on the page, in order: the ingredients, each instruction, then
+// the finish section. Indexes into this list are the only notion of
+// position; `kind` picks the dot colour and what the section renders.
+type Section =
+  | { kind: "ingredients"; label: string }
+  | { kind: "step"; label: string; step: Step }
+  | { kind: "finish"; label: string };
+
+function buildSections(steps: Step[]): Section[] {
+  return [
+    { kind: "ingredients", label: "Ingredients" },
+    ...steps.map((step, i) => ({
+      kind: "step" as const,
+      label: `Step ${i + 1}`,
+      step,
+    })),
+    { kind: "finish", label: "Done and rate" },
+  ];
+}
+
+function IngredientsList({
+  ingredients,
+}: {
+  ingredients: LocatedIngredient[];
+}) {
+  return (
+    <>
+      <h2>Ingredients</h2>
+      <div className="cook-ingredient-groups">
+        {groupByLocation(ingredients).map(([location, items]) => (
+          <div key={location ?? "other"}>
+            {location && <h3 className="cook-location">{location}</h3>}
+            <ul className="cook-ingredients">
+              {items.map((i) => (
+                <li key={i.name}>{i.display}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function StepContent({ step }: { step: Step }) {
+  return (
+    <>
+      <p className="cook-step">{step.text}</p>
+      {step.amounts && step.amounts.length > 0 && (
+        <ul className="cook-amounts">
+          {step.amounts.map((a) => (
+            <li key={a}>{a}</li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
+// Marks the meal cooked, then offers a rating (tap the selected rating
+// again to clear it).
+function FinishSection({ week, entry }: { week: string; entry: Entry }) {
+  const [cooked, setCooked] = useState(entry.cooked);
+  const [rating, setRating] = useState(entry.user_rating);
+  const [pending, startTransition] = useTransition();
 
   const finish = () =>
     startTransition(async () => {
@@ -139,20 +198,53 @@ export function CookMode({
       setRating(next);
     });
 
-  const section = (p: number, className: string, children: ReactNode) => (
-    <section
-      key={p}
-      ref={(el) => {
-        sectionRefs.current[p + 1] = el;
-      }}
-      className={`cook-section ${className} ${p === pos ? "current" : p === pos + 1 ? "next" : ""}`}
-      onClick={p === pos ? undefined : () => jump(p)}
-    >
-      {children}
-    </section>
+  return (
+    <>
+      {cooked ? (
+        <>
+          <h2>Done — enjoy!</h2>
+          <p>How was it?</p>
+          <div className="cook-rating">
+            {RATINGS.map((r) => (
+              <button
+                key={r.value}
+                disabled={pending}
+                className={rating === r.value ? "selected" : ""}
+                onClick={() => pick(r.value)}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <button
+          className="cook-finish-button"
+          disabled={pending}
+          onClick={finish}
+        >
+          Finish & mark cooked
+        </button>
+      )}
+      <p>
+        <Link href={`/cook/${week}`}>← Back to this week</Link>
+      </p>
+    </>
   );
+}
 
-  const circleState = (p: number) => (p <= pos ? "done" : "");
+// Scrolling cooking flow: ingredients, every instruction, then a finish
+// section — all on one page, snapping each section under a sticky header.
+// Non-current sections are dimmed (the next one less so) and tapping one
+// jumps to it. The header's dots show position: dark up to the current
+// section, light after; tapping a dot jumps to its section.
+export function CookMode({ week, entry }: { week: string; entry: Entry }) {
+  useWakeLock();
+  const sections = buildSections(entry.instructions);
+  const { current, headerRef, sectionRef, scrollTo } = useSnapSections();
+
+  const sectionClass = (i: number) =>
+    i === current ? "current" : i === current + 1 ? "next" : "";
 
   return (
     <div className="cook-mode">
@@ -163,102 +255,34 @@ export function CookMode({
           </Link>
         </div>
         <nav className="cook-steps" aria-label="Steps">
-          <button
-            className={`ingredients ${circleState(-1)}`}
-            aria-label="Ingredients"
-            aria-current={pos === -1 ? "step" : undefined}
-            onClick={() => jump(-1)}
-          />
-          {steps.map((_, i) => (
+          {sections.map((s, i) => (
             <button
               key={i}
-              className={circleState(i)}
-              aria-label={`Step ${i + 1}`}
-              aria-current={pos === i ? "step" : undefined}
-              onClick={() => jump(i)}
+              className={`${s.kind} ${i <= current ? "done" : ""}`}
+              aria-label={s.label}
+              aria-current={i === current ? "step" : undefined}
+              onClick={() => scrollTo(i)}
             />
           ))}
-          <button
-            className={`finish ${circleState(FINISH)}`}
-            aria-label="Done and rate"
-            aria-current={pos === FINISH ? "step" : undefined}
-            onClick={() => jump(FINISH)}
-          />
         </nav>
       </div>
 
-      {section(
-        -1,
-        "cook-ingredients-section",
-        <>
-          <h2>Ingredients</h2>
-          <div className="cook-ingredient-groups">
-            {groupByLocation(entry.ingredients).map(([location, items]) => (
-              <div key={location ?? "other"}>
-                {location && <h3 className="cook-location">{location}</h3>}
-                <ul className="cook-ingredients">
-                  {items.map((i) => (
-                    <li key={i.display}>{i.display}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </>,
-      )}
-
-      {steps.map((s, i) =>
-        section(
-          i,
-          "",
-          <>
-            <p className="cook-step">{s.text}</p>
-            {s.amounts && s.amounts.length > 0 && (
-              <ul className="cook-amounts">
-                {s.amounts.map((a) => (
-                  <li key={a}>{a}</li>
-                ))}
-              </ul>
-            )}
-          </>,
-        ),
-      )}
-
-      {section(
-        FINISH,
-        "cook-finish",
-        <>
-          {cooked ? (
-            <>
-              <h2>Done — enjoy!</h2>
-              <p>How was it?</p>
-              <div className="cook-rating">
-                {RATINGS.map((r) => (
-                  <button
-                    key={r.value}
-                    disabled={pending}
-                    className={rating === r.value ? "selected" : ""}
-                    onClick={() => pick(r.value)}
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
-            </>
+      {sections.map((s, i) => (
+        <section
+          key={i}
+          ref={sectionRef(i)}
+          className={`cook-section cook-section-${s.kind} ${sectionClass(i)}`}
+          onClick={i === current ? undefined : () => scrollTo(i)}
+        >
+          {s.kind === "ingredients" ? (
+            <IngredientsList ingredients={entry.ingredients} />
+          ) : s.kind === "step" ? (
+            <StepContent step={s.step} />
           ) : (
-            <button
-              className="cook-finish-button"
-              disabled={pending}
-              onClick={finish}
-            >
-              Finish & mark cooked
-            </button>
+            <FinishSection week={week} entry={entry} />
           )}
-          <p>
-            <Link href={`/cook/${week}`}>← Back to this week</Link>
-          </p>
-        </>,
-      )}
+        </section>
+      ))}
     </div>
   );
 }
