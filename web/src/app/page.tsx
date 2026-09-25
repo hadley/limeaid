@@ -6,11 +6,11 @@ import { mondayOf } from "@/lib/week";
 
 export default async function Home() {
   const week = mondayOf();
-  const s = await weekStage(week);
+  const stage = await weekStage(week);
   redirect(
-    s.stage === "plan"
+    stage === "plan"
       ? `/plan/${week}`
-      : s.stage === "shop"
+      : stage === "shop"
         ? `/shop/${week}`
         : `/cook/${week}`,
   );

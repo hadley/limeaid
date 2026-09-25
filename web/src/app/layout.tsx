@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { getNovelty, getWeeks } from "@/lib/plan";
+import { getWeeks } from "@/lib/plan";
+import { getNovelty } from "@/lib/settings";
 import { mondayOf } from "@/lib/week";
 import { SettingsMenu, StageNav, WeekMenu } from "./nav";
 import "./globals.css";

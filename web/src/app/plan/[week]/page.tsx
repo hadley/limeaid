@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ensurePlan, getPicks, latestPage } from "@/lib/plan";
+import { ensurePlan, getPicks, showPage } from "@/lib/plan";
 import { isMonday } from "@/lib/week";
 import { Filters } from "@/app/recipes/filters";
 import { Picker } from "./picker";
@@ -18,7 +18,7 @@ export default async function PlanWeekPage({
 
   await ensurePlan(week);
   const [page, picks] = await Promise.all([
-    latestPage(week, q, protein),
+    showPage(week, undefined, q, protein),
     getPicks(week),
   ]);
 

@@ -2,11 +2,12 @@
 
 import { useState, useTransition } from "react";
 import type { RecipeSummary } from "@/lib/db";
+import type { PlanPage } from "@/lib/plan";
 import { RecipeCard } from "@/components/recipe-card";
 import { PicksPanel } from "@/components/picks-panel";
 import { gotoPage, togglePick } from "./actions";
 
-type Page = { batch: RecipeSummary[]; idx: number; total: number };
+type Page = PlanPage;
 
 export function Picker({
   week,

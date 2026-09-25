@@ -1,7 +1,7 @@
 "use server";
 
-import { setSetting } from "@/lib/plan";
+import { setNovelty as saveNovelty } from "@/lib/settings";
 
 export async function setNovelty(value: number): Promise<void> {
-  await setSetting("novelty", Math.min(1, Math.max(0, value)));
+  await saveNovelty(value);
 }

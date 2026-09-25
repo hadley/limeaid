@@ -39,6 +39,12 @@ export type RecipeSummary = {
   user_rating: Rating | null;
 };
 
+// Select list producing a RecipeSummary; expects `recipes r` and
+// `left join ratings rt on rt.recipe_id = r.id`.
+export const RECIPE_SUMMARY_COLUMNS = `r.id, r.slug, r.name, r.proteins,
+  r.total_time_minutes, r.image_path, r.image_url, r.community_rating,
+  r.community_rating_count, rt.rating as user_rating`;
+
 export type Recipe = RecipeSummary & {
   yield: string | null;
   source_url: string | null;
