@@ -3,11 +3,24 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import type { CookEntry } from "@/lib/cook";
+import type { CookEntry, LocatedIngredient } from "@/lib/cook";
 import type { Recipe } from "@/lib/db";
+import { LOCATION_ORDER } from "@/lib/locations";
 import { rate, toggleCooked } from "../actions";
 
-type Entry = CookEntry & Recipe;
+type Entry = CookEntry &
+  Omit<Recipe, "ingredients"> & { ingredients: LocatedIngredient[] };
+
+// Group ingredients by kitchen location, in display order; ingredients with
+// no classification go in an unlabeled final group.
+function groupByLocation(ingredients: LocatedIngredient[]) {
+  const groups = new Map<string | null, LocatedIngredient[]>();
+  for (const i of ingredients) {
+    const key = LOCATION_ORDER.includes(i.location ?? "") ? i.location : null;
+    groups.set(key, [...(groups.get(key) ?? []), i]);
+  }
+  return [...groups.entries()];
+}
 
 type Rating = "disliked" | "liked" | "loved";
 
@@ -44,7 +57,7 @@ function useWakeLock() {
 }
 
 // Step-through cooking flow: a single ingredients page first (gather
-// everything, sorted by grocery department), then one instruction per
+// everything, grouped by kitchen location), then one instruction per
 // screen — step text first, its per-step amounts as chips below — then a
 // finish screen that marks the meal cooked and prompts for a rating. A
 // hamburger menu jumps to any screen directly.
@@ -92,11 +105,16 @@ export function CookMode({
       <>
         <h2>Ingredients</h2>
         <p className="muted">Get everything out before you start.</p>
-        <ul className="cook-ingredients">
-          {entry.ingredients.map((i) => (
-            <li key={i.display}>{i.display}</li>
-          ))}
-        </ul>
+        {groupByLocation(entry.ingredients).map(([location, items]) => (
+          <section key={location ?? "other"}>
+            {location && <h3 className="cook-location">{location}</h3>}
+            <ul className="cook-ingredients">
+              {items.map((i) => (
+                <li key={i.display}>{i.display}</li>
+              ))}
+            </ul>
+          </section>
+        ))}
       </>
     );
   } else if (pos < FINISH) {

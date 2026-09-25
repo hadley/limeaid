@@ -106,6 +106,12 @@ Raw dump with auth token was in /tmp (not committed).
   (broth, fish sauce, anchovy) don't classify. bacon/prosciutto are
   pork. Known coverage gaps fixed by spot-checking: lamb, prosciutto,
   sole.
+- `scrape-recipes/classify-ingredients.R`: one LLM batch job (OpenAI Batch
+  API via ellmer, gpt-6-luna) classifying every canonical ingredient name
+  into a grocery department AND a kitchen location; writes
+  `db/seed/ingredient-classifications.csv` (name, department, location),
+  which seed.mjs loads into `ingredient_departments` +
+  `ingredient_locations`. Costs money — check with the user before running.
 - `scrape-recipes/fix-metric-recipes.R`: superseded one-off fix for the old
   JSON-LD corpus; kept for history only.
 - Deleted: `scrape-recipes.R` / `scrape-images.R` (JSON-LD era; recoverable
@@ -114,6 +120,8 @@ Raw dump with auth token was in /tmp (not committed).
 ## Conventions
 
 - Use `pak::pak()` to install packages; base R pipe `|>`.
+- Always check with the user before running any LLM batch jobs — they cost
+  money.
 - jsonlite gotchas when emitting the JSONL: NULL list elements serialize as
   `{}` — use `NA` with `na = "null"` instead; wrap single-element vectors in
   `I()` so `auto_unbox = TRUE` doesn't collapse them to bare strings.

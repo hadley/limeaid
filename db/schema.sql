@@ -72,9 +72,18 @@ create table if not exists grocery_items (
 create index if not exists grocery_items_meal_plan_idx on grocery_items (meal_plan_id);
 
 -- Grocery-store department per canonical ingredient name. Populated from
--- db/seed/ingredient-departments.csv, produced by
--- scrape-recipes/classify-departments.R (LLM classification).
+-- db/seed/ingredient-classifications.csv, produced by
+-- scrape-recipes/classify-ingredients.R (LLM classification).
 create table if not exists ingredient_departments (
   name       text primary key,   -- canonical ingredient name
   department text not null
+);
+
+-- Kitchen storage location per canonical ingredient name (Fridge, Freezer,
+-- Pantry, Spice Rack, Bench). Used to group the cook page's ingredient
+-- list. Populated from db/seed/ingredient-classifications.csv, produced by
+-- scrape-recipes/classify-ingredients.R (LLM classification).
+create table if not exists ingredient_locations (
+  name     text primary key,   -- canonical ingredient name
+  location text not null
 );

@@ -44,8 +44,9 @@ filtering, pantry tracking, serving scaling, multi-user.
   `web/src/app/page.tsx`). Clicking an item's HEB link also checks it off.
   To-buy items group by department (alphabetical within) from
   `ingredient_departments`, seeded from
-  `db/seed/ingredient-departments.csv` (289 names; produced by
-  `scrape-recipes/classify-departments.R`, LLM batch classification).
+  `db/seed/ingredient-classifications.csv` (297 names; produced by
+  `scrape-recipes/classify-ingredients.R`, LLM batch classification —
+  department + kitchen location in one job).
   Department "Pantry Staples" in that CSV (garlic, broth, eggs, basmati
   rice, tomato paste, frozen peas/corn) routes items into the staples
   section even though Mealime gives them quantities.
@@ -134,14 +135,12 @@ page per step (text + per-step amounts from the `instructions` JSONB).
 Finishing marks the entry cooked (`cooked` + `cooked_at`) and prompts for a
 rating.
 
-TODO: the ingredients page in cook mode is currently sorted by grocery
-department, but what cooking actually wants is sort by *storage location* —
-fridge / pantry / spices / bench (salt, pepper, oil, garlic — the things
-that live next to the stove). That needs a new per-ingredient
-classification, separate from `ingredient_departments` (which is about the
-grocery store, not the kitchen). Likely a new table (e.g.
-`ingredient_locations`) seeded by an LLM batch pass like
-`classify-departments.R`, then re-sort `getCookEntry`'s ingredients by it.
+The cook mode ingredients page groups by kitchen *storage location* —
+Fridge / Freezer / Spice Rack / Pantry / Bench — from the
+`ingredient_locations` table, seeded from
+`db/seed/ingredient-classifications.csv` (one LLM batch job,
+`scrape-recipes/classify-ingredients.R`, classifies both grocery
+department and kitchen location per ingredient).
 
 ## Architecture
 
@@ -151,7 +150,7 @@ grocery store, not the kitchen). Likely a new table (e.g.
   add/remove, grocery toggle, cooked toggle).
 - **Database**: Postgres on Neon (local Postgres in dev); schema is
   `db/schema.sql`; seed via `web/scripts/seed.mjs` reading
-  `db/seed/recipes.jsonl` (+ `ingredient-departments.csv` when present).
+  `db/seed/recipes.jsonl` (+ `ingredient-classifications.csv` when present).
   Images copied from `recipes-full/` into `web/public/recipes/` (move to
   blob storage for Vercel — 265 MB).
 - **Hosting**: Vercel. **Auth**: middleware password check via env var.

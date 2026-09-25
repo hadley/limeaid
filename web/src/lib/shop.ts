@@ -14,7 +14,7 @@ export type GroceryItem = {
 };
 
 // Canonical names classified as "Pantry Staples" in ingredient_departments
-// (see db/seed/ingredient-departments.csv) go in the "check you have these"
+// (see db/seed/ingredient-classifications.csv) go in the "check you have these"
 // section even though Mealime gives them quantities.
 
 // (Display order for department sections lives in ./departments, pg-free

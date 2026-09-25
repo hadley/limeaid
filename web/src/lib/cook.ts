@@ -1,5 +1,7 @@
-import { pool, type Recipe, type RecipeSummary } from "./db";
-import { DEPARTMENT_ORDER } from "./departments";
+import { pool, type Ingredient, type Recipe, type RecipeSummary } from "./db";
+import { LOCATION_ORDER } from "./locations";
+
+export type LocatedIngredient = Ingredient & { location: string | null };
 
 export type CookEntry = RecipeSummary & {
   entryId: number;
@@ -31,7 +33,9 @@ export async function getCookEntries(weekStart: string): Promise<CookEntry[]> {
 export async function getCookEntry(
   weekStart: string,
   entryId: number,
-): Promise<(CookEntry & Recipe) | null> {
+): Promise<(CookEntry & Omit<Recipe, "ingredients"> & {
+  ingredients: LocatedIngredient[];
+}) | null> {
   const { rows } = await pool.query<
     Recipe & { entry_id: string; cooked: boolean }
   >(
@@ -50,25 +54,30 @@ export async function getCookEntry(
   if (rows.length === 0) return null;
   const { entry_id, ...r } = rows[0];
 
-  // Sort ingredients by grocery department (then name) so the in-recipe
-  // list matches the shopping-list grouping. Unknown departments go last.
+  // Tag each ingredient with its kitchen location (Fridge, Pantry, …) so
+  // the "get everything out" screen can group by where things live.
+  // Unknown locations go last.
   const names = r.ingredients.map((i) => i.name);
-  const { rows: deptRows } = await pool.query<{
+  const { rows: locRows } = await pool.query<{
     name: string;
-    department: string;
-  }>("select name, department from ingredient_departments where name = any($1)", [
+    location: string;
+  }>("select name, location from ingredient_locations where name = any($1)", [
     names,
   ]);
-  const deptOf = new Map(deptRows.map((d) => [d.name, d.department]));
-  const deptRank = (name: string) => {
-    const idx = DEPARTMENT_ORDER.indexOf(deptOf.get(name) ?? "");
-    return idx === -1 ? DEPARTMENT_ORDER.length : idx;
+  const locOf = new Map(locRows.map((l) => [l.name, l.location]));
+  const locRank = (location: string | null) => {
+    const idx = LOCATION_ORDER.indexOf(location ?? "");
+    return idx === -1 ? LOCATION_ORDER.length : idx;
   };
-  r.ingredients.sort(
-    (a, b) => deptRank(a.name) - deptRank(b.name) || a.name.localeCompare(b.name),
-  );
+  const ingredients: LocatedIngredient[] = r.ingredients
+    .map((i) => ({ ...i, location: locOf.get(i.name) ?? null }))
+    .sort(
+      (a, b) =>
+        locRank(a.location) - locRank(b.location) ||
+        a.name.localeCompare(b.name),
+    );
 
-  return { ...r, entryId: Number(entry_id) };
+  return { ...r, ingredients, entryId: Number(entry_id) };
 }
 
 export async function setCooked(entryId: number, cooked: boolean): Promise<void> {

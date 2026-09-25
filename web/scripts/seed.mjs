@@ -36,32 +36,36 @@ const schema = fs.readFileSync(path.join(repoRoot, "db/schema.sql"), "utf8");
 await client.query(schema);
 console.log("Schema applied");
 
-// Department mapping is optional (produced by classify-departments.R).
-const deptCsv = path.join(repoRoot, "db/seed/ingredient-departments.csv");
-if (fs.existsSync(deptCsv)) {
-  // Canonical names may contain commas, so parse the CSV properly (fields
-  // with commas are quoted by write.csv).
+// Ingredient classifications are optional (produced by
+// classify-ingredients.R). Canonical names may contain commas, so parse the
+// CSV properly (fields with commas are quoted by write.csv); department and
+// location never contain commas.
+const classCsv = path.join(repoRoot, "db/seed/ingredient-classifications.csv");
+if (fs.existsSync(classCsv)) {
   const unquote = (f) =>
     /^".*"$/.test(f) ? f.slice(1, -1).replace(/""/g, '"') : f;
-  const parseCsvLine = (line) => {
-    const m = line.match(/^"((?:[^"]|"")*)",(.*)$/) || line.match(/^([^,]*),(.*)$/);
-    return m ? [m[1].replace(/""/g, '"'), unquote(m[2])] : null;
-  };
-  const lines = fs.readFileSync(deptCsv, "utf8").split("\n").filter(Boolean);
+  const lines = fs.readFileSync(classCsv, "utf8").split("\n").filter(Boolean);
   await client.query("truncate ingredient_departments");
+  await client.query("truncate ingredient_locations");
   let n = 0;
   for (const line of lines.slice(1)) { // skip header
-    const parsed = parseCsvLine(line);
-    if (!parsed) continue;
+    const m = line.match(/^"((?:[^"]|"")*)",([^,]*),(.*)$/) ||
+      line.match(/^([^,]*),([^,]*),(.*)$/);
+    if (!m) continue;
+    const name = m[1].replace(/""/g, '"');
     await client.query(
       "insert into ingredient_departments (name, department) values ($1, $2)",
-      parsed,
+      [name, unquote(m[2])],
+    );
+    await client.query(
+      "insert into ingredient_locations (name, location) values ($1, $2)",
+      [name, unquote(m[3])],
     );
     n++;
   }
-  console.log(`Loaded ${n} ingredient departments`);
+  console.log(`Loaded ${n} ingredient classifications`);
 } else {
-  console.log("No ingredient-departments.csv; skipping departments");
+  console.log("No ingredient-classifications.csv; skipping classifications");
 }
 
 const lines = fs
