@@ -9,7 +9,12 @@ const PAGE_SIZE = 48;
 export default async function RecipesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; protein?: string; rating?: string; page?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    protein?: string;
+    rating?: string;
+    page?: string;
+  }>;
 }) {
   const { q = "", protein = "", rating = "", page = "1" } = await searchParams;
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
@@ -38,7 +43,13 @@ export default async function RecipesPage({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const link = (over: Record<string, string>) => {
-    const p = new URLSearchParams({ q, protein, rating, page: String(pageNum), ...over });
+    const p = new URLSearchParams({
+      q,
+      protein,
+      rating,
+      page: String(pageNum),
+      ...over,
+    });
     return `/recipes?${p}`;
   };
 
@@ -58,7 +69,9 @@ export default async function RecipesPage({
       </div>
       {totalPages > 1 && (
         <nav className="pagination">
-          {pageNum > 1 && <Link href={link({ page: String(pageNum - 1) })}>← Prev</Link>}
+          {pageNum > 1 && (
+            <Link href={link({ page: String(pageNum - 1) })}>← Prev</Link>
+          )}
           <span>
             Page {pageNum} of {totalPages}
           </span>

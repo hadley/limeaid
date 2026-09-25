@@ -22,9 +22,7 @@ export type GroceryItem = {
 
 function displayFor(name: string, quantity: number, unit: string | null) {
   const qty = formatQty(quantity);
-  return unit && unit !== "each"
-    ? `${qty} ${unit} ${name}`
-    : `${qty} ${name}`;
+  return unit && unit !== "each" ? `${qty} ${unit} ${name}` : `${qty} ${name}`;
 }
 
 // (Re)generate the grocery list for a week from its picked recipes:
@@ -51,7 +49,10 @@ export async function generateList(weekStart: string): Promise<void> {
     [weekStart],
   );
 
-  const toBuy = new Map<string, { name: string; unit: string | null; qty: number }>();
+  const toBuy = new Map<
+    string,
+    { name: string; unit: string | null; qty: number }
+  >();
   const staples = new Set<string>();
   for (const { ingredients } of rows) {
     for (const ing of ingredients) {
@@ -61,7 +62,8 @@ export async function generateList(weekStart: string): Promise<void> {
         const key = `${ing.name}${ing.unit ?? ""}`;
         const cur = toBuy.get(key);
         if (cur) cur.qty += ing.quantity;
-        else toBuy.set(key, { name: ing.name, unit: ing.unit, qty: ing.quantity });
+        else
+          toBuy.set(key, { name: ing.name, unit: ing.unit, qty: ing.quantity });
       }
     }
   }

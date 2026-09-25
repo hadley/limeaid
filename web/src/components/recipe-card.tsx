@@ -51,9 +51,15 @@ export function RecipeCard({
       </div>
       <div className="card-body">
         <div className="card-title">
-          {titleHref ? <Link href={titleHref}>{recipe.name}</Link> : recipe.name}
+          {titleHref ? (
+            <Link href={titleHref}>{recipe.name}</Link>
+          ) : (
+            recipe.name
+          )}
           <span className="muted">
-            {recipe.total_time_minutes ? ` · ${recipe.total_time_minutes} min` : ""}
+            {recipe.total_time_minutes
+              ? ` · ${recipe.total_time_minutes} min`
+              : ""}
           </span>
         </div>
         {children}

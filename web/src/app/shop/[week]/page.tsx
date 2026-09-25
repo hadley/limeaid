@@ -19,10 +19,14 @@ export default async function ShopWeekPage({
     <main className="container">
       {picks.length === 0 && (
         <p className="muted">
-          Nothing planned this week — <Link href={`/plan/${week}`}>pick some dinners</Link>.
+          Nothing planned this week —{" "}
+          <Link href={`/plan/${week}`}>pick some dinners</Link>.
         </p>
       )}
-      <GroceryList week={week} initialItems={JSON.parse(JSON.stringify(items))} />
+      <GroceryList
+        week={week}
+        initialItems={JSON.parse(JSON.stringify(items))}
+      />
     </main>
   );
 }

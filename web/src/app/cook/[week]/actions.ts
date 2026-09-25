@@ -1,7 +1,12 @@
 "use server";
 
 import type { Rating } from "@/lib/ratings";
-import { getCookEntries, setCooked, setRating, type CookEntry } from "@/lib/cook";
+import {
+  getCookEntries,
+  setCooked,
+  setRating,
+  type CookEntry,
+} from "@/lib/cook";
 
 export async function toggleCooked(
   weekStart: string,

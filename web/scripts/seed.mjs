@@ -48,8 +48,10 @@ if (fs.existsSync(classCsv)) {
   await client.query("truncate ingredient_departments");
   await client.query("truncate ingredient_locations");
   let n = 0;
-  for (const line of lines.slice(1)) { // skip header
-    const m = line.match(/^"((?:[^"]|"")*)",([^,]*),(.*)$/) ||
+  for (const line of lines.slice(1)) {
+    // skip header
+    const m =
+      line.match(/^"((?:[^"]|"")*)",([^,]*),(.*)$/) ||
       line.match(/^([^,]*),([^,]*),(.*)$/);
     if (!m) continue;
     const name = m[1].replace(/""/g, '"');
@@ -112,8 +114,11 @@ if (fs.existsSync(ratingsCsv)) {
   await client.query("truncate ratings");
   let loaded = 0;
   let skipped = 0;
-  for (const line of lines.slice(1)) { // skip header
-    const m = line.match(/^([^,]*),.*,(\d+),(?:True|False),(?:yes|no),\d+,\d+\r?$/);
+  for (const line of lines.slice(1)) {
+    // skip header
+    const m = line.match(
+      /^([^,]*),.*,(\d+),(?:True|False),(?:yes|no),\d+,\d+\r?$/,
+    );
     if (!m) continue;
     const rating = ratingMap[m[2]];
     if (!rating) continue;
@@ -126,7 +131,9 @@ if (fs.existsSync(ratingsCsv)) {
     if (res.rowCount > 0) loaded++;
     else skipped++;
   }
-  console.log(`Loaded ${loaded} user ratings (${skipped} skipped, no matching seeded recipe)`);
+  console.log(
+    `Loaded ${loaded} user ratings (${skipped} skipped, no matching seeded recipe)`,
+  );
 }
 
 const { rows } = await client.query("select count(*)::int as n from recipes");

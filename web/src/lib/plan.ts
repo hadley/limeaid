@@ -6,9 +6,10 @@ const TAU = 0.3; // softmax temperature
 const BATCH = 12;
 
 export async function getSetting<T>(key: string, fallback: T): Promise<T> {
-  const { rows } = await pool.query("select value from settings where key = $1", [
-    key,
-  ]);
+  const { rows } = await pool.query(
+    "select value from settings where key = $1",
+    [key],
+  );
   return rows.length ? (rows[0].value as T) : fallback;
 }
 

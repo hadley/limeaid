@@ -34,9 +34,7 @@ export default async function RecipePage({
         {[
           recipe.total_time_minutes ? `${recipe.total_time_minutes} min` : null,
           recipe.yield,
-          recipe.proteins.length
-            ? recipe.proteins.join(", ")
-            : "vegetarian",
+          recipe.proteins.length ? recipe.proteins.join(", ") : "vegetarian",
         ]
           .filter(Boolean)
           .join(" · ")}
