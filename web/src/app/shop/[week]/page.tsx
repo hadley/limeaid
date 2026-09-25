@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { getPicks } from "@/lib/plan";
 import { getList } from "@/lib/shop";
 import { isMonday } from "@/lib/week";
-import { StageHeader } from "@/components/stage-header";
 import { GroceryList } from "./list";
 
 export default async function ShopWeekPage({
@@ -18,7 +17,6 @@ export default async function ShopWeekPage({
 
   return (
     <main className="container">
-      <StageHeader stage="shop" week={week} />
       {picks.length === 0 && (
         <p className="muted">
           Nothing planned this week — <Link href={`/plan/${week}`}>pick some dinners</Link>.

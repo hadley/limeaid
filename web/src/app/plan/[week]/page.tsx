@@ -3,7 +3,6 @@ import { Suspense } from "react";
 import { ensurePlan, getPicks, latestPage } from "@/lib/plan";
 import { isMonday } from "@/lib/week";
 import { Filters } from "@/app/recipes/filters";
-import { StageHeader } from "@/components/stage-header";
 import { Picker } from "./picker";
 
 export default async function PlanWeekPage({
@@ -25,7 +24,6 @@ export default async function PlanWeekPage({
 
   return (
     <main className="container wide">
-      <StageHeader stage="plan" week={week} />
       <Suspense>
         <Filters />
       </Suspense>

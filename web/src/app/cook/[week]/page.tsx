@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCookEntries } from "@/lib/cook";
-import { isMonday } from "@/lib/week";
-import { StageHeader } from "@/components/stage-header";
+import { isMonday, shiftWeek } from "@/lib/week";
 import { CookList } from "./list";
+
+const weekLabel = (w: string) =>
+  new Date(w + "T12:00:00Z").toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
 
 export default async function CookWeekPage({
   params,
@@ -13,21 +19,39 @@ export default async function CookWeekPage({
   const { week } = await params;
   if (!isMonday(week)) notFound();
 
-  const entries = await getCookEntries(week);
+  // Plans spill over, so last week's meals show here too, under their own
+  // week so cooking one marks last week's entry. Uncooked meals sort first.
+  const lastWeek = shiftWeek(week, -1);
+  const [entries, previous] = await Promise.all([
+    getCookEntries(week),
+    getCookEntries(lastWeek),
+  ]);
+  previous.sort((a, b) => Number(a.cooked) - Number(b.cooked));
+  entries.sort((a, b) => Number(a.cooked) - Number(b.cooked));
+
+  const cooked = entries.filter((e) => e.cooked).length;
 
   return (
     <main className="container">
-      <StageHeader stage="cook" week={week} />
       {entries.length === 0 ? (
         <p className="muted">
           Nothing planned this week —{" "}
           <Link href={`/plan/${week}`}>pick some dinners</Link>.
         </p>
       ) : (
-        <CookList
-          week={week}
-          initialEntries={JSON.parse(JSON.stringify(entries))}
-        />
+        <>
+          <p className="cook-count">
+            <strong>{cooked}</strong>/{entries.length} cooked
+          </p>
+          <CookList week={week} entries={entries} />
+        </>
+      )}
+
+      {previous.length > 0 && (
+        <section className="cook-previous">
+          <h2>Last week · {weekLabel(lastWeek)}</h2>
+          <CookList week={lastWeek} entries={previous} />
+        </section>
       )}
     </main>
   );

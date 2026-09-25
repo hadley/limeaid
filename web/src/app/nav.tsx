@@ -1,16 +1,51 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { setNovelty } from "./actions";
 
 const WEEK_PATH = /^\/(plan|shop|cook)\/(\d{4}-\d{2}-\d{2})/;
 
-export function WeekMenu({ weeks }: { weeks: string[] }) {
+const STAGES = [
+  ["plan", "Plan"],
+  ["shop", "Shop"],
+  ["cook", "Cook"],
+] as const;
+
+// Plan / Shop / Cook switcher. On week pages it links to the same week's
+// other stages and highlights the active one; elsewhere (recipes) it links
+// to `thisWeek` with nothing highlighted.
+export function StageNav({ thisWeek }: { thisWeek: string }) {
+  const m = usePathname().match(WEEK_PATH);
+  const week = m?.[2] ?? thisWeek;
+  return (
+    <nav className="stage-nav">
+      {STAGES.map(([stage, label]) => (
+        <Link
+          key={stage}
+          href={`/${stage}/${week}`}
+          className={m?.[1] === stage ? "active" : undefined}
+          aria-current={m?.[1] === stage ? "page" : undefined}
+        >
+          {label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+export function WeekMenu({
+  weeks,
+  thisWeek,
+}: {
+  weeks: string[];
+  thisWeek: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const current = pathname.match(WEEK_PATH)?.[2] ?? weeks[0];
+  const current = pathname.match(WEEK_PATH)?.[2] ?? thisWeek;
 
   const select = (week: string) => {
     const m = pathname.match(WEEK_PATH);
@@ -32,8 +67,9 @@ export function WeekMenu({ weeks }: { weeks: string[] }) {
         onClick={() => setOpen(!open)}
         aria-haspopup="true"
         aria-expanded={open}
+        aria-label={`Week of ${label(current)}`}
       >
-        Week of {label(current)}
+        {label(current)} ▾
       </button>
       {open && (
         <div className="dropdown">
@@ -85,6 +121,13 @@ export function SettingsMenu({ novelty }: { novelty: number }) {
       </button>
       {open && (
         <div className="dropdown">
+          <Link
+            href="/recipes"
+            className="settings-link"
+            onClick={() => setOpen(false)}
+          >
+            Browse recipes
+          </Link>
           <label className="muted">
             Novelty: {value.toFixed(2)}
             <input
