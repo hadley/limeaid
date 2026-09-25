@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // Shared-password gate. If APP_PASSWORD is unset, auth is disabled.
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const password = process.env.APP_PASSWORD;
   if (!password) return NextResponse.next();
 
