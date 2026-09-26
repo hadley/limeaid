@@ -116,9 +116,16 @@ function buildSections(steps: Step[]): Section[] {
   ];
 }
 
-function IngredientsList({ groups }: { groups: IngredientGroup[] }) {
+function IngredientsList({
+  name,
+  groups,
+}: {
+  name: string;
+  groups: IngredientGroup[];
+}) {
   return (
     <>
+      <h1>{name}</h1>
       <h2>Ingredients</h2>
       <div className="cook-ingredient-groups">
         {groups.map(({ location, items }) => (
@@ -222,11 +229,6 @@ export function CookMode({ week, entry }: { week: string; entry: CookRecipe }) {
   return (
     <div className="cook-mode">
       <div className="cook-header" ref={headerRef}>
-        <div className="plan-toolbar cook-toolbar">
-          <Link href={`/cook/${week}`} className="muted">
-            ← {entry.name}
-          </Link>
-        </div>
         <nav className="cook-steps" aria-label="Steps">
           {sections.map((s, i) => (
             <button
@@ -248,7 +250,10 @@ export function CookMode({ week, entry }: { week: string; entry: CookRecipe }) {
           onClick={i === current ? undefined : () => scrollTo(i)}
         >
           {s.kind === "ingredients" ? (
-            <IngredientsList groups={entry.ingredientGroups} />
+            <IngredientsList
+              name={entry.name}
+              groups={entry.ingredientGroups}
+            />
           ) : s.kind === "step" ? (
             <StepContent step={s.step} />
           ) : (
