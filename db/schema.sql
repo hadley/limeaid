@@ -21,8 +21,6 @@ create table if not exists recipes (
   created_at    timestamptz not null default now()
 );
 
-create index if not exists recipes_category_idx on recipes (category);
-
 -- Three-level rating; disliked recipes are hidden everywhere in the UI.
 create table if not exists ratings (
   recipe_id  bigint not null references recipes (id) on delete cascade,

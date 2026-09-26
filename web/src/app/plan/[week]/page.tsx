@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ensurePlan, getPicks, showPage } from "@/lib/plan";
+import { ensurePlan, getPicks, suggestionPage } from "@/lib/plan";
+import { getNovelty } from "@/lib/settings";
 import { isMonday } from "@/lib/week";
 import { Filters } from "@/app/recipes/filters";
 import { Picker } from "./picker";
@@ -17,8 +18,9 @@ export default async function PlanWeekPage({
   if (!isMonday(week)) notFound();
 
   await ensurePlan(week);
+  const novelty = await getNovelty();
   const [page, picks] = await Promise.all([
-    showPage(week, undefined, q, protein),
+    suggestionPage(week, novelty, 0, q, protein),
     getPicks(week),
   ]);
 
@@ -28,8 +30,9 @@ export default async function PlanWeekPage({
         <Filters />
       </Suspense>
       <Picker
-        key={`${q}|${protein}`}
+        key={`${q}|${protein}|${novelty}`}
         week={week}
+        novelty={novelty}
         q={q}
         protein={protein}
         initialPage={JSON.parse(JSON.stringify(page))}

@@ -2,7 +2,7 @@ import { pool } from "./db";
 
 // Key/value store backed by the `settings` table (jsonb values).
 
-export async function getSetting<T>(key: string, fallback: T): Promise<T> {
+async function getSetting<T>(key: string, fallback: T): Promise<T> {
   const { rows } = await pool.query(
     "select value from settings where key = $1",
     [key],
@@ -10,7 +10,7 @@ export async function getSetting<T>(key: string, fallback: T): Promise<T> {
   return rows.length ? (rows[0].value as T) : fallback;
 }
 
-export async function setSetting(key: string, value: unknown): Promise<void> {
+async function setSetting(key: string, value: unknown): Promise<void> {
   await pool.query(
     `insert into settings (key, value) values ($1, $2::jsonb)
      on conflict (key) do update set value = excluded.value`,

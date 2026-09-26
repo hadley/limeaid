@@ -1,6 +1,6 @@
 "use server";
 
-import { ensurePlan, getPicks, showPage, type PlanPage } from "@/lib/plan";
+import { ensurePlan, getPicks, suggestionPage } from "@/lib/plan";
 import { pool, type RecipeSummary } from "@/lib/db";
 
 export async function togglePick(
@@ -22,11 +22,12 @@ export async function togglePick(
   return getPicks(weekStart);
 }
 
-export async function gotoPage(
+export async function loadMore(
   weekStart: string,
-  idx: number,
+  novelty: number,
+  offset: number,
   q: string,
   protein: string,
-): Promise<PlanPage> {
-  return showPage(weekStart, idx, q, protein);
+): Promise<{ recipes: RecipeSummary[]; done: boolean }> {
+  return suggestionPage(weekStart, novelty, offset, q, protein);
 }

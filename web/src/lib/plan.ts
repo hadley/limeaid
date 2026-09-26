@@ -1,60 +1,29 @@
 import { pool, RECIPE_SUMMARY_COLUMNS, type RecipeSummary } from "./db";
-import { drawBatch } from "./recommend";
-import { getNovelty, getSetting, setSetting } from "./settings";
+import { suggestions } from "./recommend";
 import { mondayOf } from "./week";
 
-const BATCH = 12;
+const PAGE_SIZE = 12;
 
-export type PlanPage = { batch: RecipeSummary[]; idx: number; total: number };
-
-async function recipesByIds(ids: number[]): Promise<RecipeSummary[]> {
-  if (ids.length === 0) return [];
-  const { rows } = await pool.query<RecipeSummary>(
-    `select ${RECIPE_SUMMARY_COLUMNS}
-     from recipes r
-     join unnest($1::bigint[]) with ordinality u(id, ord) on u.id = r.id
-     left join ratings rt on rt.recipe_id = r.id
-     order by u.ord`,
-    [ids],
-  );
-  return rows;
-}
-
-// Pages of BATCH recipes, persisted per week and filter combination in
-// settings as `plan-pages:<week>:<q>|<protein>` (array of id arrays). Paging
-// forward past the last page draws a fresh batch without replacement against
-// everything already shown for that key; the history resets when the pool
-// runs low.
-function pagesKey(weekStart: string, q: string, protein: string) {
-  return `plan-pages:${weekStart}:${q.toLowerCase()}|${protein}`;
-}
-
-// Show page `idx` (default: the latest), drawing a new page when idx is past
-// the end or no pages exist yet.
-export async function showPage(
+// One page of the week's deterministic suggestion order (see recommend.ts).
+// `done` means the list is exhausted. Novelty is passed in, not read from
+// settings, so every page of one scroll uses the value the picker was
+// rendered with.
+export async function suggestionPage(
   weekStart: string,
-  idx: number | undefined,
+  novelty: number,
+  offset: number,
   q = "",
   protein = "",
-): Promise<PlanPage> {
-  const key = pagesKey(weekStart, q, protein);
-  let pages = await getSetting<number[][]>(key, []);
-  idx = Math.max(0, idx ?? pages.length - 1);
-
-  if (idx >= pages.length) {
-    const { ids, exhausted } = await drawBatch(
-      BATCH,
-      await getNovelty(),
-      q,
-      protein,
-      new Set(pages.flat()),
-    );
-    pages = [...(exhausted ? [] : pages), ids];
-    await setSetting(key, pages);
-    idx = pages.length - 1;
-  }
-
-  return { batch: await recipesByIds(pages[idx]), idx, total: pages.length };
+): Promise<{ recipes: RecipeSummary[]; done: boolean }> {
+  const recipes = await suggestions(
+    weekStart,
+    novelty,
+    offset,
+    PAGE_SIZE,
+    q,
+    protein,
+  );
+  return { recipes, done: recipes.length < PAGE_SIZE };
 }
 
 export async function ensurePlan(weekStart: string): Promise<number> {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { setNovelty } from "./actions";
 
 const WEEK_PATH = /^\/(plan|shop|cook)\/(\d{4}-\d{2}-\d{2})/;
@@ -92,10 +92,14 @@ export function SettingsMenu({ novelty }: { novelty: number }) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(novelty);
   const [, startTransition] = useTransition();
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+  // Saving refreshes the page (reordering the plan picker), so wait until
+  // the slider settles rather than saving on every step.
   const slide = (v: number) => {
     setValue(v);
-    startTransition(() => setNovelty(v));
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => startTransition(() => setNovelty(v)), 300);
   };
 
   return (

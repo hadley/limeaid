@@ -67,13 +67,6 @@ Raw dump with auth token was in /tmp (not committed).
 
 ## Scripts
 
-- Deleted: `scrape-index.R` / `scrape-full-json.R` (index-era scrapers,
-  superseded by scrape-catalog.R, which doesn't need `mealime-index.csv` —
-  it diffs the app catalog against the corpus directly, and the catalog's
-  variant ids are already the 2-servings US variant so no variant-hunting
-  passes are needed). Recoverable from git history if needed. The "Site
-  structure" section above still documents how the website variant URLs and
-  page links behave, which remains relevant to scrape-catalog.R pass 1.
 - `scrape-recipes/scrape-catalog.R`: scrapes catalog recipes missing from the
   corpus (Pro + unlisted — invisible to the index). Pass 1 derives the slug
   from the name (drop stopwords with/a/an/and/of, apostrophe→hyphen,
@@ -112,10 +105,19 @@ Raw dump with auth token was in /tmp (not committed).
   `db/seed/ingredient-classifications.csv` (name, department, location),
   which seed.mjs loads into `ingredient_departments` +
   `ingredient_locations`. Costs money — check with the user before running.
-- `scrape-recipes/fix-metric-recipes.R`: superseded one-off fix for the old
-  JSON-LD corpus; kept for history only.
-- Deleted: `scrape-recipes.R` / `scrape-images.R` (JSON-LD era; recoverable
-  from git history if needed).
+
+## Web app (`web/`)
+
+- Suggestions (`web/src/lib/recommend.ts`): one deterministic SQL query per
+  page, no stored state. Order = Efraimidis–Spirakis weighted sampling with
+  u = md5(week:id), key ln(u)/exp(score/TAU), paged by offset/limit. Score
+  blends rating vs novelty (setting `novelty`, default 0.3); cooldown and
+  recency are relative to the week start so a week's order never drifts.
+  TAU = 1.75 tuned so page 1 is ~10% liked/loved at novelty 0.3. Novelty
+  only reorders rated/cooked recipes relative to unrated ones.
+- Plan picker is infinite scroll; it's keyed on novelty and the novelty
+  server action calls `refresh()`, so changing the slider reorders it live.
+- `web/src/lib/settings.ts` = jsonb key/value store (only `novelty` now).
 
 ## Conventions
 
