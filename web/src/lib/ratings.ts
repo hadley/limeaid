@@ -12,7 +12,7 @@ export const RATING_EMOJI: Record<Rating, string> = {
   loved: "❤️",
 };
 
-const RATING_NAME: Record<Rating, string> = {
+export const RATING_NAME: Record<Rating, string> = {
   disliked: "Disliked",
   liked: "Liked",
   loved: "Loved",

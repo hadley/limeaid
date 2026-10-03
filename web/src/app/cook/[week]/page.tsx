@@ -43,14 +43,14 @@ export default async function CookWeekPage({
           <p className="cook-count">
             <strong>{cooked}</strong>/{entries.length} cooked
           </p>
-          <CookList week={week} entries={entries} />
+          <CookList key={week} week={week} entries={entries} />
         </>
       )}
 
       {previous.length > 0 && (
         <section className="cook-previous">
           <h2>Last week · {weekLabel(lastWeek)}</h2>
-          <CookList week={lastWeek} entries={previous} />
+          <CookList key={lastWeek} week={lastWeek} entries={previous} />
         </section>
       )}
     </main>

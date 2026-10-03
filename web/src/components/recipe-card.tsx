@@ -11,6 +11,8 @@ import { RATING_EMOJI } from "@/lib/ratings";
 // cook time. Wrapper depends on props: a Link
 // when `href` is set, a button when `onClick` is set, otherwise a plain div
 // (use `titleHref` and `children` to compose interactive content inside).
+// `overlay` replaces the rating badge with content laid over the image but
+// outside the link/button, so it can hold its own buttons.
 export function RecipeCard({
   recipe,
   href,
@@ -19,6 +21,7 @@ export function RecipeCard({
   disabled,
   cooked,
   titleHref,
+  overlay,
   children,
 }: {
   recipe: RecipeSummary;
@@ -28,6 +31,51 @@ export function RecipeCard({
   disabled?: boolean;
   cooked?: boolean;
   titleHref?: string;
+  overlay?: ReactNode;
+  children?: ReactNode;
+}) {
+  const card = (
+    <CardShell
+      recipe={recipe}
+      href={href}
+      onClick={onClick}
+      selected={selected}
+      disabled={disabled}
+      cooked={cooked}
+      titleHref={titleHref}
+      showRating={!overlay}
+    >
+      {children}
+    </CardShell>
+  );
+  if (!overlay) return card;
+  return (
+    <div className="card-wrap">
+      {card}
+      <div className="card-overlay">{overlay}</div>
+    </div>
+  );
+}
+
+function CardShell({
+  recipe,
+  href,
+  onClick,
+  selected,
+  disabled,
+  cooked,
+  titleHref,
+  showRating,
+  children,
+}: {
+  recipe: RecipeSummary;
+  href?: string;
+  onClick?: () => void;
+  selected?: boolean;
+  disabled?: boolean;
+  cooked?: boolean;
+  titleHref?: string;
+  showRating: boolean;
   children?: ReactNode;
 }) {
   const src = imageSrc(recipe);
@@ -41,8 +89,8 @@ export function RecipeCard({
         ) : (
           <div className="card-img-placeholder" />
         )}
-        {recipe.user_rating && (
-          <span className="card-rating-badge">
+        {showRating && recipe.user_rating && (
+          <span className="card-badge card-rating-badge">
             {RATING_EMOJI[recipe.user_rating]}
           </span>
         )}

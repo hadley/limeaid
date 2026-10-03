@@ -96,6 +96,32 @@ body {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
+}
+
+/* RecipeCard with an overlay: the overlay sits over the image as a sibling
+   of the card link, so only its buttons take clicks. */
+.card-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-wrap > .card {
+  flex: 1;
+}
+
+.card-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.card-overlay button {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.card-badge {
   width: 1.75rem;
   height: 1.75rem;
   border-radius: 50%;
@@ -632,6 +658,37 @@ body {
 
 .card.cooked img {
   filter: grayscale(0.6);
+}
+
+.card-badge {
+  border: 0;
+  padding: 0;
+  color: inherit;
+}
+
+.cook-check {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  /* empty ring until checked */
+  box-shadow:
+    inset 0 0 0 2px #bbb,
+    0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.cook-check.checked {
+  background: #222;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.cook-rate {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  gap: 0.25rem;
 }
 
 .cook-count {

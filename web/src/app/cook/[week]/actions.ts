@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import type { Rating } from "@/lib/ratings";
 import {
   getCookEntries,
@@ -14,6 +15,7 @@ export async function toggleCooked(
   cooked: boolean,
 ): Promise<CookEntry[]> {
   await setCooked(entryId, cooked);
+  refresh();
   return getCookEntries(weekStart);
 }
 
@@ -23,5 +25,6 @@ export async function rate(
   rating: Rating | null,
 ): Promise<CookEntry[]> {
   await setRating(recipeId, rating);
+  refresh();
   return getCookEntries(weekStart);
 }
