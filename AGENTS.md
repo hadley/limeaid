@@ -119,6 +119,21 @@ Raw dump with auth token was in /tmp (not committed).
   server action calls `refresh()`, so changing the slider reorders it live.
 - `web/src/lib/settings.ts` = jsonb key/value store (only `novelty` now).
 
+## Deployment
+
+- Live on Vercel (Hobby), repo `hadley/limeaid`, root directory `web/`,
+  auto-deploys from `main`.
+- DB: Vercel Postgres (Neon). Env var injected as `POSTGRES_URL`;
+  `web/src/lib/db.ts` falls back from `DATABASE_URL` to `POSTGRES_URL`.
+  Seed production from a local shell:
+  `DATABASE_URL="<prod POSTGRES_URL>" npm run seed` (in `web/`).
+- Images: 2,791 files uploaded from `recipes-full/` to a public Vercel Blob
+  store; base URL hardcoded in `web/src/lib/images.ts` as `BLOB_BASE`
+  (`https://waxuaeksz3deu1yk.public.blob.vercel-storage.com`). Upload via
+  `BLOB_READ_WRITE_TOKEN=... node scripts/upload-images.mjs` — resumable
+  (skips existing blobs), retries on 429. Local `web/public/recipes/` is a
+  stale copy for dev only.
+
 ## Conventions
 
 - Use `pak::pak()` to install packages; base R pipe `|>`.
