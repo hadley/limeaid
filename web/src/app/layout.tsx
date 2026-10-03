@@ -6,7 +6,7 @@ import { SettingsMenu, StageNav, WeekMenu } from "./nav";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Mealime",
+  title: "Limeaid",
   description: "Weekly dinner planning",
 };
 

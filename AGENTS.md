@@ -1,6 +1,6 @@
-# Mealime recipe scraper
+# Limeaid (Mealime replacement)
 
-Goal: build a Mealime replacement (Mealime is shutting down) — see PLAN.md.
+Goal: build a Mealime replacement called Limeaid (Mealime is shutting down) — see PLAN.md.
 Dinner-only planning, grocery list feeding HEB curbside via search-URL
 handoff, React/Next.js + Postgres on Vercel, single user. The scraped corpus 
 below is the seed catalog.
