@@ -3,11 +3,14 @@ import type { Rating } from "./ratings";
 
 const globalForPg = globalThis as unknown as { pool?: Pool };
 
+const connectionString =
+  process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
+
 export const pool =
   globalForPg.pool ??
   new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL?.includes("neon.tech")
+    connectionString,
+    ssl: connectionString?.includes("neon.tech")
       ? { rejectUnauthorized: false }
       : undefined,
   });
