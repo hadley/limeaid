@@ -557,15 +557,49 @@ body {
 }
 
 /* grocery list */
+.shop-sections {
+  columns: 2;
+  column-gap: 1.5rem;
+}
+
+@media (max-width: 700px) {
+  .shop-sections {
+    columns: 1;
+  }
+}
+
+.shop-sections section {
+  padding: 0.5rem 1rem;
+  margin: 0 0 0.35rem;
+  border-radius: 8px;
+}
+
+.shop-sections section:nth-child(even) {
+  background: #f6f5f2;
+}
+
+.shop-sections h2 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 0 0 0.5rem;
+}
+
+.shop-sections section > .muted {
+  margin: -0.25rem 0 0.5rem;
+  font-size: 0.85rem;
+}
+
 .grocery {
   list-style: none;
   padding: 0;
-  margin: 0 0 1.5rem;
+  margin: 0;
 }
 
 .grocery li {
   padding: 0.4rem 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #e8e6e1;
+  break-inside: avoid;
 }
 
 .grocery label {
@@ -573,6 +607,12 @@ body {
   align-items: center;
   gap: 0.6rem;
   cursor: pointer;
+}
+
+.grocery input[type="checkbox"] {
+  width: 1.3rem;
+  height: 1.3rem;
+  flex-shrink: 0;
 }
 
 .grocery a {

@@ -23,7 +23,6 @@ export function GroceryList({
 
   const toBuy = items.filter((i) => i.quantity != null);
   const staples = items.filter((i) => i.quantity == null);
-  const checked = items.filter((i) => i.checked).length;
 
   // Group to-buy items by department, alphabetical within each; unknown
   // departments sort to "Other". Headings only appear when the department
@@ -69,40 +68,32 @@ export function GroceryList({
     </li>
   );
 
-  return (
-    <>
-      <div className="plan-toolbar">
-        <p>
-          <strong>{checked}</strong>/{items.length} checked
-        </p>
-      </div>
+  if (items.length === 0) {
+    return <p className="muted">No groceries yet — pick some dinners first.</p>;
+  }
 
-      {items.length === 0 ? (
-        <p className="muted">No groceries yet — pick some dinners first.</p>
-      ) : (
-        <>
-          {toBuy.length > 0 && !showHeadings && (
-            <>
-              <h2>To buy</h2>
-              <ul className="grocery">{toBuy.map(row)}</ul>
-            </>
-          )}
-          {showHeadings &&
-            depts.map((dept) => (
-              <section key={dept}>
-                <h2>{dept}</h2>
-                <ul className="grocery">{byDept.get(dept)!.map(row)}</ul>
-              </section>
-            ))}
-          {staples.length > 0 && (
-            <>
-              <h2>Pantry staples</h2>
-              <p className="muted">Check you have these.</p>
-              <ul className="grocery">{staples.map(row)}</ul>
-            </>
-          )}
-        </>
+  return (
+    <div className="shop-sections">
+      {toBuy.length > 0 && !showHeadings && (
+        <section>
+          <h2>To buy</h2>
+          <ul className="grocery">{toBuy.map(row)}</ul>
+        </section>
       )}
-    </>
+      {showHeadings &&
+        depts.map((dept) => (
+          <section key={dept}>
+            <h2>{dept}</h2>
+            <ul className="grocery">{byDept.get(dept)!.map(row)}</ul>
+          </section>
+        ))}
+      {staples.length > 0 && (
+        <section>
+          <h2>Pantry staples</h2>
+          <p className="muted">Check you have these.</p>
+          <ul className="grocery">{staples.map(row)}</ul>
+        </section>
+      )}
+    </div>
   );
 }
