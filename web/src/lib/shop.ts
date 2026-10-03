@@ -25,15 +25,18 @@ function displayFor(name: string, quantity: number, unit: string | null) {
   return unit && unit !== "each" ? `${qty} ${unit} ${name}` : `${qty} ${name}`;
 }
 
-// (Re)generate the grocery list for a week from its picked recipes:
-// merge by (name, unit) summing quantities; null-quantity ingredients go
-// into the pantry-staples section (deduped by name). Checked state resets.
-export async function generateList(weekStart: string): Promise<void> {
-  const planId = await ensurePlan(weekStart);
-  await pool.query("delete from grocery_items where meal_plan_id = $1", [
-    planId,
-  ]);
+const keyOf = (name: string, unit: string | null) => `${name}${unit ?? ""}`;
 
+type DesiredItem = {
+  name: string;
+  unit: string | null;
+  qty: number | null; // null = pantry staple
+};
+
+// The grocery list a week's picks should produce: merged by (name, unit)
+// with quantities summed; null-quantity ingredients and anything classified
+// as a pantry staple go into the staples section (deduped by name).
+async function desiredItems(weekStart: string): Promise<DesiredItem[]> {
   const stapleRows = await pool.query<{ name: string }>(
     "select name from ingredient_departments where department = 'Pantry Staples'",
   );
@@ -49,41 +52,58 @@ export async function generateList(weekStart: string): Promise<void> {
     [weekStart],
   );
 
-  const toBuy = new Map<
-    string,
-    { name: string; unit: string | null; qty: number }
-  >();
+  const toBuy = new Map<string, DesiredItem & { qty: number }>();
   const staples = new Set<string>();
   for (const { ingredients } of rows) {
     for (const ing of ingredients) {
       if (ing.quantity == null || stapleNames.has(ing.name)) {
         staples.add(ing.name);
       } else {
-        const key = `${ing.name}${ing.unit ?? ""}`;
+        const key = keyOf(ing.name, ing.unit);
         const cur = toBuy.get(key);
-        if (cur) cur.qty += ing.quantity;
+        if (cur) cur.qty! += ing.quantity;
         else
           toBuy.set(key, { name: ing.name, unit: ing.unit, qty: ing.quantity });
       }
     }
   }
+  return [
+    ...toBuy.values(),
+    ...[...staples].sort().map((name) => ({ name, unit: null, qty: null })),
+  ];
+}
+
+// (Re)generate the grocery list for a week from its picked recipes. Items
+// that survive the rebuild keep their checked state (matched by name + unit).
+export async function generateList(weekStart: string): Promise<void> {
+  const planId = await ensurePlan(weekStart);
+  const checkedRows = await pool.query<{ name: string; unit: string | null }>(
+    "select name, unit from grocery_items where meal_plan_id = $1 and checked",
+    [planId],
+  );
+  const checkedKeys = new Set(
+    checkedRows.rows.map((r) => keyOf(r.name, r.unit)),
+  );
+  await pool.query("delete from grocery_items where meal_plan_id = $1", [
+    planId,
+  ]);
 
   let position = 0;
   const insert = `insert into grocery_items
-    (meal_plan_id, name, display, quantity, unit, position)
-    values ($1, $2, $3, $4, $5, $6)`;
-  for (const item of toBuy.values()) {
+    (meal_plan_id, name, display, quantity, unit, position, checked)
+    values ($1, $2, $3, $4, $5, $6, $7)`;
+  for (const item of await desiredItems(weekStart)) {
     await pool.query(insert, [
       planId,
       item.name,
-      displayFor(item.name, item.qty, item.unit),
+      item.qty == null
+        ? item.name
+        : displayFor(item.name, item.qty, item.unit),
       item.qty,
       item.unit,
       position++,
+      checkedKeys.has(keyOf(item.name, item.unit)),
     ]);
-  }
-  for (const name of [...staples].sort()) {
-    await pool.query(insert, [planId, name, name, null, null, position++]);
   }
 }
 
@@ -95,12 +115,32 @@ const LIST_SQL = `select g.id, g.name, g.display, g.quantity, g.unit, g.checked,
   where p.week_start = $1
   order by g.position`;
 
-export async function getList(weekStart: string): Promise<GroceryItem[]> {
-  const { rows } = await pool.query<GroceryItem>(LIST_SQL, [weekStart]);
-  if (rows.length > 0) return rows;
+// Same item multiset? Compared by (name, unit) key with summed quantities;
+// quantities come back from pg as strings.
+function inSync(rows: GroceryItem[], desired: DesiredItem[]): boolean {
+  if (rows.length !== desired.length) return false;
+  const byKey = new Map(desired.map((d) => [keyOf(d.name, d.unit), d]));
+  return rows.every((row) => {
+    const d = byKey.get(keyOf(row.name, row.unit));
+    if (!d) return false;
+    return d.qty == null
+      ? row.quantity == null
+      : row.quantity != null && Number(row.quantity) === d.qty;
+  });
+}
 
-  // Lazy generation on first visit (only if the week has picks).
+// The stored list as-is (no sync with the week's picks — see syncList).
+export async function getList(weekStart: string): Promise<GroceryItem[]> {
+  return (await pool.query<GroceryItem>(LIST_SQL, [weekStart])).rows;
+}
+
+// Reconcile the stored list with the week's picks, regenerating on first
+// visit or when out of sync (checked state is preserved for surviving
+// items). Call on page load; not needed after item toggles.
+export async function syncList(weekStart: string): Promise<GroceryItem[]> {
+  const rows = await getList(weekStart);
+  if (inSync(rows, await desiredItems(weekStart))) return rows;
+
   await generateList(weekStart);
-  const again = await pool.query<GroceryItem>(LIST_SQL, [weekStart]);
-  return again.rows;
+  return getList(weekStart);
 }

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { DEPARTMENT_ORDER } from "@/lib/departments";
 import type { GroceryItem } from "@/lib/shop";
-import { regenerate, toggleItem } from "./actions";
+import { toggleItem } from "./actions";
 
 export function GroceryList({
   week,
@@ -20,10 +20,6 @@ export function GroceryList({
       setItems(await toggleItem(week, Number(item.id), !item.checked));
     });
 
-  const rebuild = () =>
-    startTransition(async () => {
-      setItems(await regenerate(week));
-    });
 
   const toBuy = items.filter((i) => i.quantity != null);
   const staples = items.filter((i) => i.quantity == null);
@@ -79,13 +75,6 @@ export function GroceryList({
         <p>
           <strong>{checked}</strong>/{items.length} checked
         </p>
-        <button
-          onClick={rebuild}
-          disabled={pending}
-          title="Rebuild from this week's picks; resets checkmarks"
-        >
-          Regenerate list
-        </button>
       </div>
 
       {items.length === 0 ? (
