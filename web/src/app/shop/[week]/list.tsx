@@ -20,7 +20,6 @@ export function GroceryList({
       setItems(await toggleItem(week, Number(item.id), !item.checked));
     });
 
-
   const toBuy = items.filter((i) => i.quantity != null);
   const staples = items.filter((i) => i.quantity == null);
 

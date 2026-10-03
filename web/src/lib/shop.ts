@@ -96,9 +96,7 @@ export async function generateList(weekStart: string): Promise<void> {
     await pool.query(insert, [
       planId,
       item.name,
-      item.qty == null
-        ? item.name
-        : displayFor(item.name, item.qty, item.unit),
+      item.qty == null ? item.name : displayFor(item.name, item.qty, item.unit),
       item.qty,
       item.unit,
       position++,
