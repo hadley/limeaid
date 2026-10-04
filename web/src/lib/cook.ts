@@ -22,8 +22,7 @@ export async function getCookEntries(weekStart: string): Promise<CookEntry[]> {
   >(
     `select e.id as entry_id, e.cooked, rt.rating as user_rating,
             r.id, r.slug, r.name, r.proteins, r.total_time_minutes,
-            r.image_path, r.image_url, r.community_rating,
-            r.community_rating_count
+            r.community_rating, r.community_rating_count
      from meal_plan_entries e
      join meal_plans p on p.id = e.meal_plan_id
      join recipes r on r.id = e.recipe_id
@@ -49,9 +48,8 @@ export async function getCookEntry(
   >(
     `select e.id as entry_id, e.cooked, rt.rating as user_rating,
             r.id, r.slug, r.name, r.proteins, r.total_time_minutes,
-            r.image_path, r.image_url, r.community_rating,
-            r.community_rating_count, r.yield, r.source_url, r.category,
-            r.ingredients, r.instructions
+            r.community_rating, r.community_rating_count, r.yield,
+            r.source_url, r.category, r.ingredients, r.instructions
      from meal_plan_entries e
      join meal_plans p on p.id = e.meal_plan_id
      join recipes r on r.id = e.recipe_id

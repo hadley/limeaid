@@ -3,7 +3,7 @@
 // --test uploads a single image and prints its public URL (use to confirm
 // the store's base URL before hardcoding it in src/lib/images.ts).
 // Resumable/idempotent: allowOverwrite makes reruns safe.
-import { put, list } from "@vercel/blob";
+import { put } from "@vercel/blob";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,7 +15,8 @@ if (!token) {
 }
 
 const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const dir = path.join(repoRoot, "recipes-full");
+// Source dir overridable: recipes-webp holds the compressed WebP corpus.
+const dir = path.join(repoRoot, process.env.IMAGE_DIR ?? "recipes-full");
 const files = fs
   .readdirSync(dir)
   .filter((f) => /\.(jpe?g|png|webp)$/i.test(f))
@@ -23,25 +24,13 @@ const files = fs
 
 const test = process.argv.includes("--test");
 
-// Skip blobs already in the store so reruns only upload stragglers.
-const existing = new Set();
-if (!test) {
-  let cursor;
-  do {
-    const page = await list({ token, limit: 1000, cursor });
-    for (const b of page.blobs) existing.add(b.pathname);
-    cursor = page.hasMore ? page.cursor : undefined;
-  } while (cursor);
-}
-
-const targets = (test ? files.slice(0, 1) : files).filter(
-  (f) => !existing.has(f),
-);
-console.log(
-  `Uploading ${targets.length} of ${files.length} images (${existing.size} already in store)`,
-);
+// Resumable: each file is HEAD-checked individually in the worker, so
+// reruns only upload files missing from the store.
+const targets = test ? files.slice(0, 1) : files;
+console.log(`Uploading ${targets.length} of ${files.length} images`);
 
 let done = 0;
+let skipped = 0;
 let failed = 0;
 let firstUrl = null;
 
@@ -69,22 +58,39 @@ async function uploadOne(f) {
   }
 }
 
+// Public store base URL — keep in sync with BLOB_BASE in src/lib/images.ts.
+// Existence is checked with a plain HTTP HEAD: 200 = skip, 404 = upload.
+const BLOB_BASE = "https://waxuaeksz3deu1yk.public.blob.vercel-storage.com";
+
+async function exists(f) {
+  const res = await fetch(`${BLOB_BASE}/${f}`, { method: "HEAD" });
+  if (res.status === 200) return true;
+  if (res.status === 404) return false;
+  throw new Error(`HEAD ${f} returned ${res.status}`);
+}
+
 async function worker(queue) {
   while (queue.length) {
     const f = queue.shift();
     try {
-      const { url } = await uploadOne(f);
-      firstUrl ??= url;
-      done++;
+      if (await exists(f)) {
+        skipped++;
+      } else {
+        const { url } = await uploadOne(f);
+        firstUrl ??= url;
+        done++;
+      }
     } catch (e) {
       failed++;
       console.error(`FAILED ${f}: ${e.message}`);
     }
-    if (done % 250 === 0 && done > 0) console.log(`${done} uploaded...`);
+    const processed = done + skipped;
+    if (processed % 250 === 0 && processed > 0)
+      console.log(`${processed} processed (${done} uploaded, ${skipped} skipped)...`);
   }
 }
 
 const queue = [...targets];
 await Promise.all(Array.from({ length: CONCURRENCY }, () => worker(queue)));
-console.log(`Done: ${done} uploaded, ${failed} failed`);
+console.log(`Done: ${done} uploaded, ${skipped} skipped (already in store), ${failed} failed`);
 if (firstUrl) console.log(`Example URL: ${firstUrl}`);

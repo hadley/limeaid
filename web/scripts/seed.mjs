@@ -79,9 +79,9 @@ await client.query("begin");
 await client.query("truncate recipes restart identity cascade");
 const insert = `insert into recipes
   (slug, mealime_id, name, source_url, category, proteins,
-   total_time_minutes, yield, image_path, image_url,
+   total_time_minutes, yield,
    community_rating, community_rating_count, ingredients, instructions)
-  values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14::jsonb)`;
+  values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12::jsonb)`;
 for (const line of lines) {
   const r = JSON.parse(line);
   await client.query(insert, [
@@ -93,8 +93,6 @@ for (const line of lines) {
     r.proteins ?? [],
     r.total_time_minutes ?? null,
     r.yield ?? null,
-    r.image_path ?? null,
-    r.image_url ?? null,
     r.community_rating ?? null,
     r.community_rating_count ?? null,
     JSON.stringify(r.ingredients),

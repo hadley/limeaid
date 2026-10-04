@@ -9,7 +9,7 @@ export default async function RecipePage({
 }) {
   const { slug } = await params;
   const { rows } = await pool.query<Recipe>(
-    `select id, slug, name, proteins, total_time_minutes, image_path, image_url,
+    `select id, slug, name, proteins, total_time_minutes,
             community_rating, community_rating_count, yield, source_url,
             category, ingredients, instructions, rt.rating as user_rating
      from recipes

@@ -125,8 +125,7 @@ for (f in files) {
   }
 
   slug <- pr$slug
-  img <- list.files("recipes-full", pattern = paste0("^", slug, "\\.(jpeg|jpg)$"))
-  if (length(img) == 0) img <- NA_character_
+  # Images live in the blob store as <slug>.webp; no DB column needed.
 
   # Structured ingredients from line_items; quantity is "" for pantry
   # staples (their amounts live in the per-step `amounts` below). Each item
@@ -182,8 +181,6 @@ for (f in files) {
     proteins = classify_proteins(vapply(pr$line_items$ingredient_name, canonical_name, character(1))),
     total_time_minutes = as.integer(pr$cooking_minutes),
     yield = paste(pr$serving_count, "servings"),
-    image_path = if (is.na(img)) NA else paste0("recipes-full/", img),
-    image_url = pr$presentation_image_url,
     ingredients = ingredients,
     instructions = instructions
   )

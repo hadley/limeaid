@@ -12,8 +12,6 @@ create table if not exists recipes (
   proteins      text[] not null default '{}',  -- any of chicken/beef/pork/lamb/turkey/seafood/tofu/egg; empty = vegetarian
   total_time_minutes integer,                  -- parsed from ISO 8601; soft signal only
   yield         text,                          -- e.g. '2 servings'
-  image_path    text,                          -- local file in app storage
-  image_url     text,                          -- original CDN url (fallback)
   community_rating       real,                 -- mealime-wide average (1-5); recall aid for re-entering own ratings
   community_rating_count integer,
   ingredients   jsonb not null,                -- array of {name, quantity, unit, display}; quantity/unit null = pantry staple

@@ -21,8 +21,8 @@ export default async function RecipesPage({
 
   const { rows } = await pool.query<RecipeSummary & { total: string }>(
     `with filtered as (
-       select recipes.id, slug, name, proteins, total_time_minutes, image_path,
-              image_url, r.rating as user_rating
+       select recipes.id, slug, name, proteins, total_time_minutes,
+              r.rating as user_rating
        from recipes
        left join ratings r on r.recipe_id = recipes.id
        where ($1 = '' or name ilike '%' || $1 || '%')

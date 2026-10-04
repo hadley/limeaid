@@ -35,8 +35,6 @@ export type RecipeSummary = {
   name: string;
   proteins: string[];
   total_time_minutes: number | null;
-  image_path: string | null;
-  image_url: string | null;
   community_rating: number | null;
   community_rating_count: number | null;
   user_rating: Rating | null;
@@ -45,7 +43,7 @@ export type RecipeSummary = {
 // Select list producing a RecipeSummary; expects `recipes r` and
 // `left join ratings rt on rt.recipe_id = r.id`.
 export const RECIPE_SUMMARY_COLUMNS = `r.id, r.slug, r.name, r.proteins,
-  r.total_time_minutes, r.image_path, r.image_url, r.community_rating,
+  r.total_time_minutes, r.community_rating,
   r.community_rating_count, rt.rating as user_rating`;
 
 export type Recipe = RecipeSummary & {
