@@ -26,6 +26,7 @@ export default async function ShopWeekPage({
         <GroceryList
           week={week}
           initialItems={JSON.parse(JSON.stringify(items))}
+          recipeNames={picks.map((p) => p.name)}
         />
       )}
     </main>

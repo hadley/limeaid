@@ -11,6 +11,7 @@ export type GroceryItem = {
   checked: boolean;
   position: number;
   department: string | null;
+  recipes: string[]; // names of this week's picks that use it, in pick order
 };
 
 // Canonical names classified as "Pantry Staples" in ingredient_departments
@@ -132,7 +133,20 @@ export async function updateList(weekStart: string): Promise<void> {
 }
 
 const LIST_SQL = `select g.id, g.name, g.display, g.quantity, g.unit, g.checked,
-       g.position, d.department
+       g.position, d.department,
+       array(
+         select r.name
+         from meal_plan_entries e
+         join recipes r on r.id = e.recipe_id
+         where e.meal_plan_id = p.id
+           and exists (
+             select 1 from jsonb_array_elements(r.ingredients) i
+             where i->>'name' = g.name
+               -- staples are merged by name only; to-buy items by name + unit
+               and (g.quantity is null or i->>'unit' is not distinct from g.unit)
+           )
+         order by e.id
+       ) as recipes
   from grocery_items g
   join meal_plans p on p.id = g.meal_plan_id
   left join ingredient_departments d on d.name = g.name

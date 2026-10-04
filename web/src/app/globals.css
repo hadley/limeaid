@@ -665,6 +665,59 @@ body {
   color: var(--muted);
 }
 
+/* which picks use an item: small lettered markers, name in a popover
+   on hover or tap */
+.grocery-recipes {
+  margin-left: auto;
+  display: flex;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.grocery-recipes button {
+  position: relative;
+  font: inherit;
+  font-size: 0.7rem;
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: 1px solid #e8e6e1;
+  border-radius: 999px;
+  min-width: 1.3rem;
+  padding: 0.2rem 0.3rem;
+  cursor: pointer;
+}
+
+.grocery-recipes .tip {
+  display: none;
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.35rem);
+  z-index: 10;
+  width: max-content;
+  max-width: 14rem;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  text-align: left;
+  white-space: normal;
+  color: #fff;
+  background: #333;
+  border-radius: 0.35rem;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.2);
+  pointer-events: none;
+}
+
+.grocery-recipes button.open .tip {
+  display: block;
+}
+
+@media (hover: hover) {
+  .grocery-recipes button:hover .tip {
+    display: block;
+  }
+}
+
 /* cook week list */
 .card.cooked {
   opacity: 0.55;

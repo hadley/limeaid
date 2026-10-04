@@ -11,12 +11,25 @@ const POLL_MS = 3000;
 export function GroceryList({
   week,
   initialItems,
+  recipeNames,
 }: {
   week: string;
   initialItems: GroceryItem[];
+  recipeNames: string[]; // picks in plan order; markers show A, B, C...
 }) {
   const [items, setItems] = useState(initialItems);
   const [pending, startTransition] = useTransition();
+  // Recipe marker whose popover is pinned open by a tap ("<itemId>:<name>").
+  const [openTip, setOpenTip] = useState<string | null>(null);
+  useEffect(() => {
+    if (!openTip) return;
+    const close = () => setOpenTip(null);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [openTip]);
+  // Markers are A, B, C... in plan order.
+  const letterFor = (name: string) =>
+    String.fromCharCode(65 + recipeNames.indexOf(name));
   const pendingRef = useRef(false);
   useEffect(() => {
     pendingRef.current = pending;
@@ -86,6 +99,30 @@ export function GroceryList({
         >
           {item.display}
         </a>
+        <span className="grocery-recipes">
+          {item.recipes.map((name) => {
+            const key = `${item.id}:${name}`;
+            return (
+              <button
+                type="button"
+                key={name}
+                className={openTip === key ? "open" : ""}
+                aria-label={name}
+                onClick={(e) => {
+                  // Inside the <label>: don't let a tap toggle the checkbox.
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setOpenTip(openTip === key ? null : key);
+                }}
+              >
+                {letterFor(name)}
+                <span className="tip" role="tooltip">
+                  {name}
+                </span>
+              </button>
+            );
+          })}
+        </span>
       </label>
     </li>
   );
