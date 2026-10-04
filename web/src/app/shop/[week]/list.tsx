@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { DEPARTMENT_ORDER } from "@/lib/departments";
 import type { GroceryItem } from "@/lib/shop";
-import { toggleItem } from "./actions";
+import { refreshList, toggleItem } from "./actions";
+
+// How often to re-fetch the list so other viewers' check-offs appear.
+const POLL_MS = 3000;
 
 export function GroceryList({
   week,
@@ -14,6 +17,26 @@ export function GroceryList({
 }) {
   const [items, setItems] = useState(initialItems);
   const [pending, startTransition] = useTransition();
+  const pendingRef = useRef(false);
+  useEffect(() => {
+    pendingRef.current = pending;
+  }, [pending]);
+
+  useEffect(() => {
+    const tick = async () => {
+      // Skip polls while hidden or mid-toggle so a stale response can't
+      // clobber the checkmark the server action just returned.
+      if (document.visibilityState !== "visible" || pendingRef.current) return;
+      setItems(await refreshList(week));
+    };
+    const timer = setInterval(tick, POLL_MS);
+    const onVisible = () => void tick();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [week]);
 
   const toggle = (item: GroceryItem) =>
     startTransition(async () => {

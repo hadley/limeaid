@@ -2,6 +2,7 @@
 
 import { ensurePlan, getPicks, suggestionPage } from "@/lib/plan";
 import { pool, type RecipeSummary } from "@/lib/db";
+import { updateList } from "@/lib/shop";
 
 export async function togglePick(
   weekStart: string,
@@ -19,6 +20,7 @@ export async function togglePick(
      where not exists (select 1 from del)`,
     [planId, recipeId],
   );
+  await updateList(weekStart);
   return getPicks(weekStart);
 }
 

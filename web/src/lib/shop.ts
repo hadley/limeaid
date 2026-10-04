@@ -73,35 +73,61 @@ async function desiredItems(weekStart: string): Promise<DesiredItem[]> {
   ];
 }
 
-// (Re)generate the grocery list for a week from its picked recipes. Items
-// that survive the rebuild keep their checked state (matched by name + unit).
-export async function generateList(weekStart: string): Promise<void> {
+// Bring a week's grocery list in line with its picked recipes. Call after
+// any change to the picks. Diffs in place in one transaction: items that
+// survive keep their id and checked state (matched by name + unit), so
+// concurrent viewers never see a half-rebuilt list and rows don't remount.
+export async function updateList(weekStart: string): Promise<void> {
   const planId = await ensurePlan(weekStart);
-  const checkedRows = await pool.query<{ name: string; unit: string | null }>(
-    "select name, unit from grocery_items where meal_plan_id = $1 and checked",
-    [planId],
-  );
-  const checkedKeys = new Set(
-    checkedRows.rows.map((r) => keyOf(r.name, r.unit)),
-  );
-  await pool.query("delete from grocery_items where meal_plan_id = $1", [
-    planId,
-  ]);
+  const desired = await desiredItems(weekStart);
 
-  let position = 0;
-  const insert = `insert into grocery_items
-    (meal_plan_id, name, display, quantity, unit, position, checked)
-    values ($1, $2, $3, $4, $5, $6, $7)`;
-  for (const item of await desiredItems(weekStart)) {
-    await pool.query(insert, [
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    const existing = await client.query<{
+      id: string;
+      name: string;
+      unit: string | null;
+    }>("select id, name, unit from grocery_items where meal_plan_id = $1", [
       planId,
-      item.name,
-      item.qty == null ? item.name : displayFor(item.name, item.qty, item.unit),
-      item.qty,
-      item.unit,
-      position++,
-      checkedKeys.has(keyOf(item.name, item.unit)),
     ]);
+    const idByKey = new Map(
+      existing.rows.map((r) => [keyOf(r.name, r.unit), r.id]),
+    );
+
+    const keep = new Set<string>();
+    for (const [position, item] of desired.entries()) {
+      const display =
+        item.qty == null ? item.name : displayFor(item.name, item.qty, item.unit);
+      const id = idByKey.get(keyOf(item.name, item.unit));
+      if (id) {
+        keep.add(id);
+        await client.query(
+          `update grocery_items set display = $2, quantity = $3, position = $4
+           where id = $1`,
+          [id, display, item.qty, position],
+        );
+      } else {
+        const ins = await client.query<{ id: string }>(
+          `insert into grocery_items
+             (meal_plan_id, name, display, quantity, unit, position)
+           values ($1, $2, $3, $4, $5, $6)
+           returning id`,
+          [planId, item.name, display, item.qty, item.unit, position],
+        );
+        keep.add(ins.rows[0].id);
+      }
+    }
+    await client.query(
+      "delete from grocery_items where meal_plan_id = $1 and not (id = any($2))",
+      [planId, [...keep]],
+    );
+    await client.query("commit");
+  } catch (e) {
+    await client.query("rollback");
+    throw e;
+  } finally {
+    client.release();
   }
 }
 
@@ -113,32 +139,7 @@ const LIST_SQL = `select g.id, g.name, g.display, g.quantity, g.unit, g.checked,
   where p.week_start = $1
   order by g.position`;
 
-// Same item multiset? Compared by (name, unit) key with summed quantities;
-// quantities come back from pg as strings.
-function inSync(rows: GroceryItem[], desired: DesiredItem[]): boolean {
-  if (rows.length !== desired.length) return false;
-  const byKey = new Map(desired.map((d) => [keyOf(d.name, d.unit), d]));
-  return rows.every((row) => {
-    const d = byKey.get(keyOf(row.name, row.unit));
-    if (!d) return false;
-    return d.qty == null
-      ? row.quantity == null
-      : row.quantity != null && Number(row.quantity) === d.qty;
-  });
-}
-
-// The stored list as-is (no sync with the week's picks — see syncList).
+// The stored list (kept current by updateList whenever picks change).
 export async function getList(weekStart: string): Promise<GroceryItem[]> {
   return (await pool.query<GroceryItem>(LIST_SQL, [weekStart])).rows;
-}
-
-// Reconcile the stored list with the week's picks, regenerating on first
-// visit or when out of sync (checked state is preserved for surviving
-// items). Call on page load; not needed after item toggles.
-export async function syncList(weekStart: string): Promise<GroceryItem[]> {
-  const rows = await getList(weekStart);
-  if (inSync(rows, await desiredItems(weekStart))) return rows;
-
-  await generateList(weekStart);
-  return getList(weekStart);
 }
