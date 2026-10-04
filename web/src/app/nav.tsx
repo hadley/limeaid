@@ -38,9 +38,11 @@ export function StageNav({ thisWeek }: { thisWeek: string }) {
 export function WeekMenu({
   weeks,
   thisWeek,
+  today,
 }: {
-  weeks: string[];
+  weeks: { week: string; total: number; cooked: number }[];
   thisWeek: string;
+  today: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -73,13 +75,24 @@ export function WeekMenu({
       </button>
       {open && (
         <div className="dropdown">
-          {weeks.map((w) => (
+          <button
+            className="week-option new-plan"
+            onClick={() => select(thisWeek)}
+          >
+            ＋ Start a new menu ({label(today)})
+          </button>
+          {weeks.map(({ week: w, total, cooked }) => (
             <button
               key={w}
               className={`week-option${w === current ? " active" : ""}`}
               onClick={() => select(w)}
             >
               Week of {label(w)}
+              {total > 0 && (
+                <span className="week-count">
+                  {cooked}/{total} cooked
+                </span>
+              )}
             </button>
           ))}
         </div>

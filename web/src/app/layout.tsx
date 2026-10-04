@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getWeeks } from "@/lib/plan";
 import { getNovelty } from "@/lib/settings";
-import { mondayOf } from "@/lib/week";
+import { today } from "@/lib/week";
 import { SettingsMenu, StageNav, WeekMenu } from "./nav";
 import "./globals.css";
 
@@ -14,7 +14,7 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const [weeks, novelty] = await Promise.all([getWeeks(), getNovelty()]);
-  const thisWeek = mondayOf();
+  const thisWeek = today();
 
   return (
     <html lang="en">
@@ -22,7 +22,11 @@ export default async function RootLayout({
         <header className="navbar">
           <StageNav thisWeek={thisWeek} />
           <span className="nav-right">
-            <WeekMenu weeks={weeks} thisWeek={thisWeek} />
+            <WeekMenu
+              weeks={weeks}
+              thisWeek={thisWeek}
+              today={new Date().toLocaleDateString("en-CA")}
+            />
             <SettingsMenu novelty={novelty} />
           </span>
         </header>

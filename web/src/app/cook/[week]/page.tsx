@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCookEntries } from "@/lib/cook";
-import { isMonday, shiftWeek } from "@/lib/week";
+import { isDate, shiftWeek } from "@/lib/week";
 import { CookList } from "./list";
 
 const weekLabel = (w: string) =>
@@ -17,7 +17,7 @@ export default async function CookWeekPage({
   params: Promise<{ week: string }>;
 }) {
   const { week } = await params;
-  if (!isMonday(week)) notFound();
+  if (!isDate(week)) notFound();
 
   // Plans spill over, so last week's meals show here too, under their own
   // week so cooking one marks last week's entry. Uncooked meals sort first.

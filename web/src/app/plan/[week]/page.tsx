@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ensurePlan, getPicks, suggestionPage } from "@/lib/plan";
 import { getNovelty } from "@/lib/settings";
-import { isMonday } from "@/lib/week";
+import { isDate } from "@/lib/week";
 import { Filters } from "@/app/recipes/filters";
 import { Picker } from "./picker";
 
@@ -15,7 +15,7 @@ export default async function PlanWeekPage({
 }) {
   const { week } = await params;
   const { q = "", protein = "" } = await searchParams;
-  if (!isMonday(week)) notFound();
+  if (!isDate(week)) notFound();
 
   await ensurePlan(week);
   const novelty = await getNovelty();

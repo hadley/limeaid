@@ -262,6 +262,20 @@ body {
   font-weight: 700;
 }
 
+.week-count {
+  float: right;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.week-option.new-plan {
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  border-radius: 6px 6px 0 0;
+  margin-bottom: 0.15rem;
+}
+
 .stage-nav {
   display: inline-flex;
   border: 1px solid var(--border);

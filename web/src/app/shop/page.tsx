@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { mondayOf } from "@/lib/week";
+import { currentPlanStart } from "@/lib/plan";
 
 export const dynamic = "force-dynamic";
 
-export default function ShopIndex() {
-  redirect(`/shop/${mondayOf()}`);
+export default async function ShopIndex() {
+  redirect(`/shop/${await currentPlanStart()}`);
 }

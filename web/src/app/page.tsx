@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
-import { weekStage } from "@/lib/plan";
-import { mondayOf } from "@/lib/week";
+import { currentPlanStart, weekStage } from "@/lib/plan";
 
 export default async function Home() {
-  const week = mondayOf();
+  const week = await currentPlanStart();
   const stage = await weekStage(week);
   redirect(
     stage === "plan"

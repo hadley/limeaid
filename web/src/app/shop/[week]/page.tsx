@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPicks } from "@/lib/plan";
 import { syncList } from "@/lib/shop";
-import { isMonday } from "@/lib/week";
+import { isDate } from "@/lib/week";
 import { GroceryList } from "./list";
 
 export default async function ShopWeekPage({
@@ -11,7 +11,7 @@ export default async function ShopWeekPage({
   params: Promise<{ week: string }>;
 }) {
   const { week } = await params;
-  if (!isMonday(week)) notFound();
+  if (!isDate(week)) notFound();
 
   const [items, picks] = await Promise.all([syncList(week), getPicks(week)]);
 

@@ -1,6 +1,6 @@
 import { pool, RECIPE_SUMMARY_COLUMNS, type RecipeSummary } from "./db";
 import { suggestions } from "./recommend";
-import { mondayOf } from "./week";
+import { today } from "./week";
 
 const PAGE_SIZE = 12;
 
@@ -55,13 +55,50 @@ export async function getPicks(weekStart: string): Promise<RecipeSummary[]> {
   return rows;
 }
 
-// Weeks that have plans, newest first, with the current week always included.
-export async function getWeeks(): Promise<string[]> {
+// The plan the user is currently working through: the newest plan that
+// still has uncooked recipes. Falls back to today (a fresh plan) once the
+// last plan is fully cooked.
+export async function currentPlanStart(): Promise<string> {
   const { rows } = await pool.query<{ w: string }>(
-    "select to_char(week_start, 'YYYY-MM-DD') as w from meal_plans",
+    `select to_char(p.week_start, 'YYYY-MM-DD') as w
+     from meal_plans p
+     where exists (
+       select 1 from meal_plan_entries e
+       where e.meal_plan_id = p.id and not e.cooked
+     )
+     order by p.week_start desc
+     limit 1`,
   );
-  const weeks = new Set([mondayOf(), ...rows.map((r) => r.w)]);
-  return [...weeks].sort().reverse();
+  return rows[0]?.w ?? today();
+}
+
+export type WeekInfo = { week: string; total: number; cooked: number };
+
+// Weeks that have plans, newest first, with the current week always included
+// (total 0 = no plan started yet). cooked/total feed the week dropdown.
+export async function getWeeks(): Promise<WeekInfo[]> {
+  const { rows } = await pool.query<{
+    w: string;
+    total: string;
+    cooked: string;
+  }>(
+    `select to_char(p.week_start, 'YYYY-MM-DD') as w,
+            count(e.id) as total,
+            count(e.id) filter (where e.cooked) as cooked
+     from meal_plans p
+     left join meal_plan_entries e on e.meal_plan_id = p.id
+     group by p.week_start`,
+  );
+  const weeks = new Map(rows.map((r) => [r.w, r]));
+  if (!weeks.has(today()))
+    weeks.set(today(), { w: today(), total: "0", cooked: "0" });
+  return [...weeks.values()]
+    .map((r) => ({
+      week: r.w,
+      total: Number(r.total),
+      cooked: Number(r.cooked),
+    }))
+    .sort((a, b) => b.week.localeCompare(a.week));
 }
 
 // Stage of the weekly loop, for the home-page redirect: plan until something
