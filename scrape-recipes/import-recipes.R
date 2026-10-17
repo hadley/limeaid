@@ -85,8 +85,7 @@ protein_patterns <- c(
   lamb    = "lamb",
   turkey  = "turkey",
   seafood = "salmon|shrimp|cod|tilapia|tuna|halibut|mahi|sole|fish fillet|scallop|mussel|clam|crab|lobster",
-  tofu    = "tofu|tempeh|vegan sausage",
-  egg     = "^eggs?$"
+  tofu    = "tofu|tempeh|vegan sausage"
 )
 
 classify_proteins <- function(names) {

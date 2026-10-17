@@ -88,7 +88,7 @@ Raw dump with auth token was in /tmp (not committed).
   (e.g. `can (15 oz)`) so grocery merging never mixes sizes, and names are
   canonicalized lowercase + comma-inversion only (no singularization).
   Also emits `proteins` = array of all matched protein categories
-  (chicken/beef/pork/lamb/turkey/seafood/tofu/egg; [] = vegetarian),
+  (chicken/beef/pork/lamb/turkey/seafood/tofu; [] = vegetarian),
   stored as `text[]` in the schema. Multi-label by design — no
   winner-take-all, so "Prosciutto-Wrapped Cod" = ["pork", "seafood"];
   99 recipes have multiple proteins. Community ratings come from
