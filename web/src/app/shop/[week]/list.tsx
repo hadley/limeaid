@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { DEPARTMENT_ORDER } from "@/lib/departments";
+import { LOCATION_ORDER } from "@/lib/locations";
 import type { GroceryItem } from "@/lib/shop";
 import { refreshList, toggleItem } from "./actions";
 
@@ -76,7 +77,22 @@ export function GroceryList({
       (DEPARTMENT_ORDER.indexOf(b) === -1 ? 99 : DEPARTMENT_ORDER.indexOf(b)),
   );
   const showHeadings = depts.length > 1;
-  staples.sort((a, b) => a.name.localeCompare(b.name));
+
+  // Group staples by kitchen location, alphabetical within each; unknown
+  // locations sort into an unlabeled final group.
+  const byLoc = new Map<string | null, GroceryItem[]>();
+  for (const item of staples) {
+    const loc =
+      item.location && LOCATION_ORDER.includes(item.location)
+        ? item.location
+        : null;
+    byLoc.set(loc, [...(byLoc.get(loc) ?? []), item]);
+  }
+  for (const list of byLoc.values()) {
+    list.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  const locs = [...LOCATION_ORDER, null].filter((loc) => byLoc.has(loc));
+  const showLocHeadings = locs.length > 1;
 
   const row = (item: GroceryItem) => (
     <li key={item.id} className={item.checked ? "checked" : ""}>
@@ -148,9 +164,14 @@ export function GroceryList({
         ))}
       {staples.length > 0 && (
         <section>
-          <h2>Pantry staples</h2>
+          <h2>Staples</h2>
           <p className="muted">Check you have these.</p>
-          <ul className="grocery">{staples.map(row)}</ul>
+          {locs.map((loc) => (
+            <div key={loc ?? "other"}>
+              {showLocHeadings && loc !== null && <h3>{loc}</h3>}
+              <ul className="grocery">{byLoc.get(loc)!.map(row)}</ul>
+            </div>
+          ))}
         </section>
       )}
     </div>

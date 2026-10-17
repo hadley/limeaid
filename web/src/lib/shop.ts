@@ -11,6 +11,7 @@ export type GroceryItem = {
   checked: boolean;
   position: number;
   department: string | null;
+  location: string | null;
   recipes: string[]; // names of this week's picks that use it, in pick order
 };
 
@@ -133,7 +134,7 @@ export async function updateList(weekStart: string): Promise<void> {
 }
 
 const LIST_SQL = `select g.id, g.name, g.display, g.quantity, g.unit, g.checked,
-       g.position, d.department,
+       g.position, d.department, l.location,
        array(
          select r.name
          from meal_plan_entries e
@@ -150,6 +151,7 @@ const LIST_SQL = `select g.id, g.name, g.display, g.quantity, g.unit, g.checked,
   from grocery_items g
   join meal_plans p on p.id = g.meal_plan_id
   left join ingredient_departments d on d.name = g.name
+  left join ingredient_locations l on l.name = g.name
   where p.week_start = $1
   order by g.position`;
 
