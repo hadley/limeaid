@@ -92,7 +92,11 @@ export function GroceryList({
     list.sort((a, b) => a.name.localeCompare(b.name));
   }
   const locs = [...LOCATION_ORDER, null].filter((loc) => byLoc.has(loc));
-  const showLocHeadings = locs.length > 1;
+  // Sentence case: "Spice Rack" -> "Spice rack".
+  const stapleHeading = (loc: string | null) =>
+    loc === null
+      ? "Staples"
+      : `Staples: ${loc[0]}${loc.slice(1).toLowerCase()}`;
 
   const row = (item: GroceryItem) => (
     <li key={item.id} className={item.checked ? "checked" : ""}>
@@ -162,18 +166,12 @@ export function GroceryList({
             <ul className="grocery">{byDept.get(dept)!.map(row)}</ul>
           </section>
         ))}
-      {staples.length > 0 && (
-        <section>
-          <h2>Staples</h2>
-          <p className="muted">Check you have these.</p>
-          {locs.map((loc) => (
-            <div key={loc ?? "other"}>
-              {showLocHeadings && loc !== null && <h3>{loc}</h3>}
-              <ul className="grocery">{byLoc.get(loc)!.map(row)}</ul>
-            </div>
-          ))}
+      {locs.map((loc) => (
+        <section key={`staples:${loc ?? "other"}`}>
+          <h2>{stapleHeading(loc)}</h2>
+          <ul className="grocery">{byLoc.get(loc)!.map(row)}</ul>
         </section>
-      )}
+      ))}
     </div>
   );
 }

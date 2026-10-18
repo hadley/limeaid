@@ -614,6 +614,10 @@ body {
   border-radius: 8px;
 }
 
+.shop-sections h2 {
+  break-after: avoid;
+}
+
 .shop-sections section:nth-child(even) {
   background: #f6f5f2;
 }
@@ -625,17 +629,6 @@ body {
   margin: 0 0 0.5rem;
 }
 
-.shop-sections h3 {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--muted);
-  margin: 0.75rem 0 0.35rem;
-}
-
-.shop-sections section > .muted {
-  margin: -0.25rem 0 0.5rem;
-  font-size: 0.85rem;
-}
 
 .grocery {
   list-style: none;
