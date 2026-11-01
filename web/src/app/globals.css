@@ -292,6 +292,14 @@ body {
   margin-bottom: 0.15rem;
 }
 
+.plan-banner {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+}
+
 .stage-nav {
   display: inline-flex;
   border: 1px solid var(--border);

@@ -72,6 +72,17 @@ export async function currentPlanStart(): Promise<string> {
   return rows[0]?.w ?? today();
 }
 
+// True once any plan has at least one cooked recipe — the signal that the
+// user is mid-plan and might want to start fresh.
+export async function hasCookedPlan(): Promise<boolean> {
+  const { rows } = await pool.query<{ cooked: boolean }>(
+    `select exists (
+       select 1 from meal_plan_entries where cooked
+     ) as cooked`,
+  );
+  return rows[0].cooked;
+}
+
 export type WeekInfo = { week: string; total: number; cooked: number };
 
 // Weeks that have plans, newest first, with the current week always included
