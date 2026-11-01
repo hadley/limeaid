@@ -1,10 +1,11 @@
-import { pool, type Ingredient, type Recipe, type RecipeSummary } from "./db";
-import { LOCATION_ORDER } from "./locations";
+import { pool, type Recipe, type RecipeSummary } from "./db";
+import { groupIngredientsByLocation } from "./ingredients";
 import type { Rating } from "./ratings";
+import type { IngredientSection } from "@/components/recipe-view";
 
-// Ingredients sharing a kitchen location. `location` is null for the final
-// group of ingredients with no known location.
-export type IngredientGroup = { location: string | null; items: Ingredient[] };
+// Ingredients sharing a kitchen location (Fridge, Pantry, …) as the label.
+// A null label marks the final group of ingredients with no known location.
+export type IngredientGroup = IngredientSection;
 
 // One entry with its full recipe, ingredients grouped for the cook view.
 export type CookRecipe = CookEntry &
@@ -60,27 +61,8 @@ export async function getCookEntry(
   if (rows.length === 0) return null;
   const { entry_id, ...r } = rows[0];
 
-  // Group ingredients by kitchen location (Fridge, Pantry, …) in
-  // LOCATION_ORDER, alphabetical within a group, so the ingredients section
-  // can show where things live. Unknown locations form a final group.
   const { ingredients, ...recipe } = r;
-  const { rows: locRows } = await pool.query<{
-    name: string;
-    location: string;
-  }>("select name, location from ingredient_locations where name = any($1)", [
-    ingredients.map((i) => i.name),
-  ]);
-  const locOf = new Map(locRows.map((l) => [l.name, l.location]));
-  const byLocation = new Map<string | null, Ingredient[]>();
-  const sorted = [...ingredients].sort((a, b) => a.name.localeCompare(b.name));
-  for (const i of sorted) {
-    const loc = locOf.get(i.name) ?? null;
-    const key = loc !== null && LOCATION_ORDER.includes(loc) ? loc : null;
-    byLocation.set(key, [...(byLocation.get(key) ?? []), i]);
-  }
-  const ingredientGroups = [...LOCATION_ORDER, null]
-    .filter((location) => byLocation.has(location))
-    .map((location) => ({ location, items: byLocation.get(location)! }));
+  const ingredientGroups = await groupIngredientsByLocation(ingredients);
 
   return { ...recipe, ingredientGroups, entryId: Number(entry_id) };
 }

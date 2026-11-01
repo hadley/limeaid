@@ -183,17 +183,33 @@ body {
 }
 
 .steps > li {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .steps > li > p {
-  margin: 0 0 0.25rem;
+  margin: 0 0 0.5rem;
+}
+
+.step-text {
+  font-size: 1.4rem;
+  line-height: 1.5;
 }
 
 .amounts {
-  color: var(--muted);
-  font-size: 0.875rem;
+  list-style: none;
+  padding: 0;
   margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.amounts li {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #f6f6f6;
+  padding: 0.35rem 0.9rem;
+  font-size: 1rem;
 }
 
 /* navbar */
@@ -886,18 +902,18 @@ html.cook-snap {
 
 /* Ingredients flow into two columns (single column on very narrow screens)
    so the whole list fits one screen. Groups may split across columns. */
-.cook-ingredient-groups {
+.ingredient-groups {
   columns: 2;
   column-gap: 1.25rem;
 }
 
 @media (max-width: 380px) {
-  .cook-ingredient-groups {
+  .ingredient-groups {
     columns: 1;
   }
 }
 
-.cook-ingredients {
+.ingredient-list {
   font-size: 1.1rem;
   line-height: 1.35;
   list-style: none;
@@ -905,11 +921,11 @@ html.cook-snap {
   margin: 0 0 0.75rem;
 }
 
-.cook-ingredients li {
+.ingredient-list li {
   margin-bottom: 0.3rem;
 }
 
-h3.cook-location {
+h3.ingredient-label {
   margin: 0 0 0.4rem;
   padding: 0.2rem 0.5rem;
   border-left: 3px solid #d08a1a;
@@ -919,28 +935,6 @@ h3.cook-location {
   letter-spacing: 0.05em;
   color: #444;
   break-after: avoid;
-}
-
-.cook-amounts {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 1rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.cook-amounts li {
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: #f6f6f6;
-  padding: 0.35rem 0.9rem;
-  font-size: 1rem;
-}
-
-.cook-step {
-  font-size: 1.4rem;
-  line-height: 1.5;
 }
 
 .cook-rating {

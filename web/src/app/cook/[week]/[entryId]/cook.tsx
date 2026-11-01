@@ -2,8 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
-import type { CookRecipe, IngredientGroup } from "@/lib/cook";
+import type { CookRecipe } from "@/lib/cook";
 import { type Rating, RATINGS, ratingLabel } from "@/lib/ratings";
+import {
+  RecipeHeader,
+  RecipeIngredients,
+  StepBody,
+} from "@/components/recipe-view";
 import { rate, toggleCooked } from "../actions";
 
 // Keep the screen awake while cooking; re-acquire when the tab becomes
@@ -116,48 +121,6 @@ function buildSections(steps: Step[]): Section[] {
   ];
 }
 
-function IngredientsList({
-  name,
-  groups,
-}: {
-  name: string;
-  groups: IngredientGroup[];
-}) {
-  return (
-    <>
-      <h1>{name}</h1>
-      <h2>Ingredients</h2>
-      <div className="cook-ingredient-groups">
-        {groups.map(({ location, items }) => (
-          <div key={location ?? "other"}>
-            {location && <h3 className="cook-location">{location}</h3>}
-            <ul className="cook-ingredients">
-              {items.map((i) => (
-                <li key={i.name}>{i.display}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-    </>
-  );
-}
-
-function StepContent({ step }: { step: Step }) {
-  return (
-    <>
-      <p className="cook-step">{step.text}</p>
-      {step.amounts && step.amounts.length > 0 && (
-        <ul className="cook-amounts">
-          {step.amounts.map((a) => (
-            <li key={a}>{a}</li>
-          ))}
-        </ul>
-      )}
-    </>
-  );
-}
-
 // Marks the meal cooked, then offers a rating (tap the selected rating
 // again to clear it).
 function FinishSection({ week, entry }: { week: string; entry: CookRecipe }) {
@@ -250,12 +213,12 @@ export function CookMode({ week, entry }: { week: string; entry: CookRecipe }) {
           onClick={i === current ? undefined : () => scrollTo(i)}
         >
           {s.kind === "ingredients" ? (
-            <IngredientsList
-              name={entry.name}
-              groups={entry.ingredientGroups}
-            />
+            <>
+              <RecipeHeader recipe={entry} />
+              <RecipeIngredients sections={entry.ingredientGroups} />
+            </>
           ) : s.kind === "step" ? (
-            <StepContent step={s.step} />
+            <StepBody step={s.step} />
           ) : (
             <FinishSection week={week} entry={entry} />
           )}
