@@ -799,7 +799,11 @@ body {
 /* Scroll snapping on the document while cook mode is mounted; the
    component sets scroll-padding-top to the sticky header height. */
 html.cook-snap {
-  scroll-snap-type: y mandatory;
+  /* proximity, not mandatory: sections taller than the viewport (e.g. the
+     ingredients section with its hero image, or a long step) must stay
+     scrollable — mandatory snapping traps the scroll position between
+     section starts. */
+  scroll-snap-type: y proximity;
 }
 
 .cook-header {
